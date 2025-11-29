@@ -1,23 +1,29 @@
+import 'package:html_unescape/html_unescape.dart'; // <--- 1. Import this
+
 class Sticker {
   final int id;
   final String text;
   final String imageUrl;
-  final String postUrl; // <--- NEW FIELD
+  final String postUrl;
   final DateTime? date;
 
   Sticker({
     required this.id,
     required this.text,
     required this.imageUrl,
-    required this.postUrl, // <--- NEW REQUIREMENT
+    required this.postUrl,
     this.date,
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
-    // 1. Get the title (WordPress format)
-    String textContent = json['title']['rendered'] ?? '';
+    // 2. Create the converter
+    var unescape = HtmlUnescape();
 
-    // 2. Get the Image URL (WordPress format using _embedded)
+    // 3. Get the raw text and convert it
+    String rawText = json['title']['rendered'] ?? '';
+    String textContent = unescape.convert(rawText); // <--- Fixes the weird characters
+
+    // Get Image URL
     String imgUrl = '';
     if (json['_embedded'] != null &&
         json['_embedded']['wp:featuredmedia'] != null) {
@@ -27,14 +33,14 @@ class Sticker {
       }
     }
 
-    // 3. Get the Post Link
-    String link = json['link'] ?? ''; // <--- Capture the link
+    // Get Link
+    String link = json['link'] ?? '';
 
     return Sticker(
       id: json['id'] as int,
-      text: textContent,
+      text: textContent, // Use the clean text
       imageUrl: imgUrl,
-      postUrl: link, // <--- Store it
+      postUrl: link,
       date: json['date'] != null
           ? DateTime.tryParse(json['date'] as String)
           : null,
