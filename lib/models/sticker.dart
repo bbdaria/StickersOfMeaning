@@ -1,4 +1,4 @@
-import 'package:html_unescape/html_unescape.dart'; // <--- 1. Import this
+import 'package:html_unescape/html_unescape.dart';
 
 class Sticker {
   final int id;
@@ -21,7 +21,7 @@ class Sticker {
 
     // 3. Get the raw text and convert it
     String rawText = json['title']['rendered'] ?? '';
-    String textContent = unescape.convert(rawText); // <--- Fixes the weird characters
+    String textContent = unescape.convert(rawText);
 
     // Get Image URL
     String imgUrl = '';

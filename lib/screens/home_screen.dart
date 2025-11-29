@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/sticker.dart';
 import '../services/api_service.dart';
@@ -163,6 +164,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: const Text('Configure widget size and style'),
                 onTap: () {
                   Navigator.pushNamed(context, PreferencesScreen.routeName);
+                },
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.computer),
+                title: const Text('Our site'),
+                subtitle: const Text('Sticker Of Meaning'),
+                onTap: () {
+                  launchUrl(Uri.https('stickersofmeaning.org'),);
                 },
               ),
             ),
