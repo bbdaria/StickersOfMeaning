@@ -13,15 +13,19 @@ class ApiService {
   }
 
   Future<Sticker> fetchTodaysSticker() async {
-    final uri = _buildUri('/stickers/today');
+    // Fetch the latest 1 post, embedding media info
+    final uri = _buildUri('posts', {'per_page': '1', '_embed': 'true'});
     final response = await http.get(uri);
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to load todays sticker');
+      throw Exception('Failed to load sticker');
     }
 
-    final Map<String, dynamic> data = jsonDecode(response.body);
-    return Sticker.fromJson(data);
+    final List<dynamic> data = jsonDecode(response.body);
+    if (data.isEmpty) throw Exception('No posts found');
+
+    // Return the first one
+    return Sticker.fromJson(data[0]);
   }
 
   Future<List<Sticker>> searchStickers(String query) async {
