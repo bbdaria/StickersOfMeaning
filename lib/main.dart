@@ -13,7 +13,8 @@ Future<void> main() async {
   await preferencesService.init(); // load stored prefs
 
   final apiService = ApiService(
-    baseUrl: 'https://stickersofmeaning.org/wp-json/wp/v2/', // TODO set your WordPress url
+    baseUrl: 'https://stickersofmeaning.org/wp-json/wp/v2/',
+    dbUrl: 'https://stickersofmeaning.org/wp-json/wp/v2/',
   );
 
   final widgetService = WidgetService();

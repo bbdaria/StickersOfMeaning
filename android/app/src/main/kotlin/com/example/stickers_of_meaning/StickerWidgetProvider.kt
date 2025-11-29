@@ -18,28 +18,33 @@ class StickerWidgetProvider : HomeWidgetProvider() {
     ) {
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {
-                // Open the app when clicked
-                // val pendingIntent = HomeWidgetLaunchIntent.getActivity(
-                //     context,
-                //     MainActivity::class.java
-                // )
-                // setOnClickPendingIntent(R.id.widget_image, pendingIntent)
-
-                // 1. Get Data from Flutter
                 val text = widgetData.getString("sticker_text", "No Sticker Yet")
                 val imagePath = widgetData.getString("sticker_image", null)
 
-                // 2. Update Text
                 setTextViewText(R.id.widget_text, text)
 
-                // 3. Update Image
+                // --- SAFETY CHECK START ---
+                var imageLoaded = false
                 if (imagePath != null) {
-                    val bitmap = BitmapFactory.decodeFile(imagePath)
-                    setImageViewBitmap(R.id.widget_image, bitmap)
-                    setViewVisibility(R.id.widget_image, View.VISIBLE)
-                } else {
+                    val file = java.io.File(imagePath)
+                    if (file.exists()) {
+                        try {
+                            val bitmap = BitmapFactory.decodeFile(imagePath)
+                            if (bitmap != null) {
+                                setImageViewBitmap(R.id.widget_image, bitmap)
+                                setViewVisibility(R.id.widget_image, View.VISIBLE)
+                                imageLoaded = true
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                if (!imageLoaded) {
                     setViewVisibility(R.id.widget_image, View.GONE)
                 }
+                // --- SAFETY CHECK END ---
             }
 
             appWidgetManager.updateAppWidget(widgetId, views)
