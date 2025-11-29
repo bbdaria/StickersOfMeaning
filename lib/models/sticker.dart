@@ -16,29 +16,31 @@ class Sticker {
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
-    // 2. Create the converter
     var unescape = HtmlUnescape();
 
-    // 3. Get the raw text and convert it
-    String rawText = json['title']['rendered'] ?? '';
-    String textContent = unescape.convert(rawText);
+    // 1. Get Title
+    String textContent = '';
+    if (json['title'] != null && json['title']['rendered'] != null) {
+      textContent = unescape.convert(json['title']['rendered']);
+    }
 
-    // Get Image URL
+    // 2. Get Image URL (from embedded media)
     String imgUrl = '';
     if (json['_embedded'] != null &&
         json['_embedded']['wp:featuredmedia'] != null) {
-      var media = json['_embedded']['wp:featuredmedia'];
-      if (media is List && media.isNotEmpty) {
-        imgUrl = media[0]['source_url'] ?? '';
+      var mediaList = json['_embedded']['wp:featuredmedia'];
+      if (mediaList is List && mediaList.isNotEmpty) {
+        // Try to get the full size URL, or fallback to source_url
+        imgUrl = mediaList[0]['source_url'] ?? '';
       }
     }
 
-    // Get Link
+    // 3. Get Link
     String link = json['link'] ?? '';
 
     return Sticker(
       id: json['id'] as int,
-      text: textContent, // Use the clean text
+      text: textContent,
       imageUrl: imgUrl,
       postUrl: link,
       date: json['date'] != null

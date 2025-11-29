@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/sticker.dart';
@@ -43,7 +44,6 @@ class ApiService {
     return {for (var item in data) item['id']: item['name']};
   }
 
-  // UPDATED: query is now optional (defaults to empty string)
   Future<List<Sticker>> searchStickers({
     String query = '',
     List<int>? categoryIds,
@@ -54,14 +54,14 @@ class ApiService {
       'per_page': '20',
     };
 
-    // Only add search param if text exists
     if (query.trim().isNotEmpty) {
       params['search'] = query.trim();
 
-      // Only apply column filters if we are actually searching text
-      if (searchIn != null && searchIn.isNotEmpty) {
-        params['search_columns'] = searchIn;
-      }
+      // --- CHANGE: Comment this out for now ---
+      // WordPress search is smarter when you don't restrict it!
+      // if (searchIn != null && searchIn.isNotEmpty) {
+      //   params['search_columns'] = searchIn;
+      // }
     }
 
     if (categoryIds != null && categoryIds.isNotEmpty) {

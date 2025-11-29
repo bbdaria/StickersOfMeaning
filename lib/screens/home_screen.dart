@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListTile(
                 leading: const Icon(Icons.search),
                 title: const Text('Sticker database search'),
-                subtitle: const Text('Find stickers by mood topic author'),
+                subtitle: const Text('Find stickers by topic and author'),
                 onTap: () {
                   Navigator.pushNamed(context, StickerSearchScreen.routeName);
                 },

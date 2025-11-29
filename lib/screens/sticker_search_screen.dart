@@ -45,28 +45,34 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     final query = _controller.text.trim();
 
     // UPDATED: Allow search if Query has text OR Categories are selected
+    // If BOTH are empty, we clear the results.
     if (query.isEmpty && _selectedCategories.isEmpty) {
-      // Optional: clear results if everything is empty
       setState(() {
         _futureResults = null;
       });
       return;
     }
 
-    List<String> searchColumns = [];
-    if (_searchInTitle) searchColumns.add('post_title');
-    if (_searchInContent) {
-      searchColumns.add('post_content');
-      searchColumns.add('post_excerpt');
+    // --- SMART FILTER LOGIC ---
+    List<String>? searchColumns;
+
+    // Only apply limits if the user explicitly UNCHECKED something.
+    // If both are true (default), we leave searchColumns as null.
+    // This lets WordPress use its default powerful search.
+    if (_searchInTitle && !_searchInContent) {
+      searchColumns = ['post_title']; // Search ONLY Title
+    } else if (!_searchInTitle && _searchInContent) {
+      searchColumns = ['post_content', 'post_excerpt']; // Search ONLY Content
     }
-    if (searchColumns.isEmpty) searchColumns = ['post_title', 'post_content', 'post_excerpt'];
+    // If both are true: searchColumns remains null -> Searches Everything.
+    // If both are false: searchColumns remains null -> Searches Everything.
 
     final api = context.read<ApiService>();
     setState(() {
       _futureResults = api.searchStickers(
         query: query,
         categoryIds: _selectedCategories.toList(),
-        searchIn: searchColumns,
+        searchIn: searchColumns, // Pass null to search everywhere
       );
     });
   }
