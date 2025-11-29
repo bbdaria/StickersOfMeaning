@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../models/sticker.dart';
 import '../services/api_service.dart';
+import '../services/preferences_service.dart';
+import 'sticker_detail_screen.dart';
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -15,17 +17,57 @@ class StickerSearchScreen extends StatefulWidget {
 
 class _StickerSearchScreenState extends State<StickerSearchScreen> {
   final TextEditingController _controller = TextEditingController();
-  Future<List<Sticker>>? _futureResults;
-  String _lastQuery = '';
+  bool _isSearching = false;
+  List<Sticker> _results = [];
+  String? _error;
 
-  void _search() {
-    final query = _controller.text.trim();
-    if (query.isEmpty) return;
+  Future<void> _search() async {
     final api = context.read<ApiService>();
+    final prefs = context.read<PreferencesService>();
+
+    final query = _controller.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _results = [];
+        _error = null;
+      });
+      return;
+    }
+
     setState(() {
-      _lastQuery = query;
-      _futureResults = api.searchStickers(query);
+      _isSearching = true;
+      _error = null;
     });
+
+    try {
+      final stickers = await api.searchStickers(
+        textQuery: query,
+        categoryIds: prefs.selectedCategoryIds.isEmpty
+            ? null
+            : prefs.selectedCategoryIds.toList(),
+      );
+      setState(() {
+        _results = stickers;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  void _openSticker(Sticker sticker) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StickerDetailScreen(sticker: sticker),
+      ),
+    );
   }
 
   @override
@@ -34,59 +76,42 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     super.dispose();
   }
 
-  Widget _buildResults() {
-    if (_futureResults == null) {
+  Widget _buildBody() {
+    final prefs = context.watch<PreferencesService>();
+
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Text(
+          _error!,
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+      );
+    }
+    if (_results.isEmpty) {
       return const Center(
-        child: Text('Start by searching for a sticker.'),
+        child: Text('No stickers yet,try searching'),
       );
     }
 
-    return FutureBuilder<List<Sticker>>(
-      future: _futureResults,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'Error searching stickers: ${snapshot.error}',
-              style: const TextStyle(color: Colors.red),
-            ),
-          );
-        }
+    return ListView.separated(
+      itemCount: _results.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final sticker = _results[index];
+        final text = prefs.isHebrew ? sticker.hebrewText : sticker.englishText;
+        final direction =
+            prefs.isHebrew ? TextDirection.rtl : TextDirection.ltr;
 
-        final results = snapshot.data ?? [];
-
-        if (results.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('No results for "$_lastQuery".'),
-          );
-        }
-
-        return ListView.separated(
-          itemCount: results.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final sticker = results[index];
-            return ListTile(
-              leading: sticker.imageUrl.isNotEmpty
-                  ? Image.network(
-                sticker.imageUrl,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.broken_image),
-              )
-                  : const Icon(Icons.sticky_note_2_outlined),
-              title: Text(sticker.text, maxLines: 2, overflow: TextOverflow.ellipsis),
-              onTap: () {
-                // Later you can push a sticker details page
-              },
-            );
-          },
+        return ListTile(
+          title: Text(
+            text,
+            textDirection: direction,
+          ),
+          subtitle: sticker.pageUrl != null ? Text(sticker.pageUrl!) : null,
+          onTap: () => _openSticker(sticker),
         );
       },
     );
@@ -94,37 +119,45 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefs = context.watch<PreferencesService>();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sticker database search'),
+        title: const Text('Search-stickers'),
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    textInputAction: TextInputAction.search,
                     onSubmitted: (_) => _search(),
                     decoration: const InputDecoration(
-                      labelText: 'Search',
                       border: OutlineInputBorder(),
+                      labelText: 'Search-text',
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: _search,
+                  icon: _isSearching
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.search),
+                  onPressed: _isSearching ? null : _search,
+                  tooltip:
+                      'Search in ${prefs.selectedCategoryIds.isEmpty ? 'all-categories' : 'selected-categories'}',
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
-          Expanded(child: _buildResults()),
+          Expanded(child: _buildBody()),
         ],
       ),
     );

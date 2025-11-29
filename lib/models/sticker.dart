@@ -1,16 +1,32 @@
+import 'package:meta/meta.dart';
+
+/// Domain-model for a sticker(WordPress post).
+/// A sticker is a quote in Hebrew+English with a link to its page
+/// and the WordPress categories it belongs to.
+@immutable
 class Sticker {
   final int id;
-  final String text;
-  final String imageUrl;
+  final String hebrewText;
+  final String englishText;
+  final String? imageUrl;
+  final String? pageUrl;
+  final List<int> categoryIds;
   final DateTime? date;
 
-  Sticker({
+  const Sticker({
     required this.id,
-    required this.text,
-    required this.imageUrl,
+    required this.hebrewText,
+    required this.englishText,
+    this.imageUrl,
+    this.pageUrl,
+    this.categoryIds = const [],
     this.date,
   });
 
+  /// Parse from a generic WordPress post json.
+  ///
+  /// You will probably need to tweak the field names here once you
+  /// inspect the real json from your site.
   factory Sticker.fromJson(Map<String, dynamic> json) {
     // WordPress stores the title/content in a nested object called 'rendered'
     String textContent = json['title']['rendered'] ?? '';
@@ -35,5 +51,20 @@ class Sticker {
           ? DateTime.tryParse(json['date'] as String)
           : null,
     );
+  }
+
+  static String? _tryExtractFeaturedImage(Map<String, dynamic>? embedded) {
+    if (embedded == null) return null;
+    final mediaList = embedded['wp:featuredmedia'];
+    if (mediaList is List && mediaList.isNotEmpty) {
+      final media = mediaList.first;
+      if (media is Map<String, dynamic>) {
+        final sourceUrl = media['source_url'];
+        if (sourceUrl is String && sourceUrl.isNotEmpty) {
+          return sourceUrl;
+        }
+      }
+    }
+    return null;
   }
 }
