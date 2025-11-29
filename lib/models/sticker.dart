@@ -2,35 +2,39 @@ class Sticker {
   final int id;
   final String text;
   final String imageUrl;
+  final String postUrl; // <--- NEW FIELD
   final DateTime? date;
 
   Sticker({
     required this.id,
     required this.text,
     required this.imageUrl,
+    required this.postUrl, // <--- NEW REQUIREMENT
     this.date,
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
-    // WordPress stores the title/content in a nested object called 'rendered'
+    // 1. Get the title (WordPress format)
     String textContent = json['title']['rendered'] ?? '';
 
-    // WordPress stores images in a weird embedded field usually
-    // We will assume for now the image URL is inside 'jetpack_featured_media_url'
-    // or you might need to parse the '_embedded' field if you use standard WP media.
-    // For this example, let's look for a common featured media field:
+    // 2. Get the Image URL (WordPress format using _embedded)
     String imgUrl = '';
-    if (json['_embedded'] != null && json['_embedded']['wp:featuredmedia'] != null) {
+    if (json['_embedded'] != null &&
+        json['_embedded']['wp:featuredmedia'] != null) {
       var media = json['_embedded']['wp:featuredmedia'];
       if (media is List && media.isNotEmpty) {
-        imgUrl = media[0]['source_url'];
+        imgUrl = media[0]['source_url'] ?? '';
       }
     }
+
+    // 3. Get the Post Link
+    String link = json['link'] ?? ''; // <--- Capture the link
 
     return Sticker(
       id: json['id'] as int,
       text: textContent,
       imageUrl: imgUrl,
+      postUrl: link, // <--- Store it
       date: json['date'] != null
           ? DateTime.tryParse(json['date'] as String)
           : null,

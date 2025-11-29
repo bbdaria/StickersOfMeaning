@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart'; // add to pubspec if you want deep links
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/sticker.dart';
 import '../services/api_service.dart';
@@ -24,9 +24,16 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
     _futureSticker = api.fetchTodaysSticker();
   }
 
-  Future<void> _openSite() async {
-    // Replace with your real site link
-    final uri = Uri.parse('https://example.com');
+  // UPDATED: Now accepts the specific URL to open
+  Future<void> _openSite(String url) async {
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No link available for this sticker')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -81,8 +88,11 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
                 const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 24),
+
+              // UPDATED BUTTON
               ElevatedButton.icon(
-                onPressed: _openSite,
+                // Pass the sticker's specific URL to the function
+                onPressed: () => _openSite(sticker.postUrl),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('Open full post on site'),
               ),
