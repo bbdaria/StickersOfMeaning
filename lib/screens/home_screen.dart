@@ -38,9 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final widgetService = context.read<WidgetService>();
     await widgetService.updateStickerWidget(sticker);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Widget updated')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Widget updated')));
   }
 
   @override
@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: const TextStyle(fontSize: 16),
                         ),
                       ),
-                      ButtonBar(
+                      OverflowBar(
                         alignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
@@ -152,10 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: const Text('Sticker database search'),
                 subtitle: const Text('Find stickers by mood topic author'),
                 onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    StickerSearchScreen.routeName,
-                  );
+                  Navigator.pushNamed(context, StickerSearchScreen.routeName);
                 },
               ),
             ),
@@ -165,10 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: const Text('Widget setup'),
                 subtitle: const Text('Configure widget size and style'),
                 onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    PreferencesScreen.routeName,
-                  );
+                  Navigator.pushNamed(context, PreferencesScreen.routeName);
                 },
               ),
             ),
