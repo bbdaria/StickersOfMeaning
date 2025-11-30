@@ -1,16 +1,5 @@
 # stickers_of_meaning
 
-A new Flutter project.
+Stickers of Meaning is an Android and iOS app built by CS undergraduates at the Technion for (https://stickersofmeaning.org/).
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The app continues the legacy of the quotes left by the fallen soldiers of the Swords of Iron war by displaying a daily quote through a home screen widget and allowing users to learn more about the person behind each quote.
