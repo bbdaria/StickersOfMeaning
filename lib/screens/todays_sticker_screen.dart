@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import '../services/preferences_service.dart';
+import '../services/widget_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 
@@ -21,7 +22,10 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
   void initState() {
     super.initState();
     final api = context.read<ApiService>();
-    _futureSticker = api.fetchTodaysSticker();
+    final prefs = context.read<PreferencesService>();
+    final widgetService = context.read<WidgetService>();
+
+    _futureSticker = api.getDailySticker(prefs, widgetService);
   }
 
   // UPDATED: Now accepts the specific URL to open
@@ -48,7 +52,7 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Todays sticker'),
+        title: const Text("Today's Sticker"),
       ),
       body: FutureBuilder<Sticker>(
         future: _futureSticker,

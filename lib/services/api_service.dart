@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'dart:ffi';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/sticker.dart';
+import 'preferences_service.dart';
+import 'widget_service.dart';
 
 class ApiService {
   final String baseUrl;
@@ -20,7 +22,6 @@ class ApiService {
       final queryParams = <String, dynamic>{};
       query.forEach((key, value) {
         if (value is List) {
-          // PHP/WordPress array style: key[]=value1&key[]=value2
           queryParams['$key[]'] = value.map((e) => e.toString()).toList();
         } else {
           queryParams[key] = value.toString();
@@ -31,6 +32,8 @@ class ApiService {
 
     return uri;
   }
+
+  // --- Original Methods (Restored) ---
 
   Future<Map<int, String>> fetchCategories() async {
     final uri = _buildUri(dbUrl, 'categories', {'per_page': '100'});
@@ -56,12 +59,6 @@ class ApiService {
 
     if (query.trim().isNotEmpty) {
       params['search'] = query.trim();
-
-      // --- CHANGE: Comment this out for now ---
-      // WordPress search is smarter when you don't restrict it!
-      // if (searchIn != null && searchIn.isNotEmpty) {
-      //   params['search_columns'] = searchIn;
-      // }
     }
 
     if (categoryIds != null && categoryIds.isNotEmpty) {
@@ -88,5 +85,70 @@ class ApiService {
     final List<dynamic> data = jsonDecode(response.body);
     if (data.isEmpty) throw Exception('Empty');
     return Sticker.fromJson(data[0]);
+  }
+
+  // --- New Daily Sticker Logic ---
+
+  Future<List<int>> _fetchAllStickerIds() async {
+    final uri = _buildUri(dbUrl, 'posts', {
+      '_fields': 'id',
+      'per_page': '100',
+      'status': 'publish',
+    });
+
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
+
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map<int>((e) => e['id'] as int).toList();
+  }
+
+  Future<Sticker> _fetchStickerById(int id) async {
+    final uri = _buildUri(dbUrl, 'posts/$id', {'_embed': 'true'});
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('Failed to fetch sticker details');
+
+    return Sticker.fromJson(jsonDecode(response.body));
+  }
+
+  Future<Sticker> getDailySticker(
+      PreferencesService prefs,
+      WidgetService widgetService
+      ) async {
+    final now = DateTime.now();
+    final todayString = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+    final lastDate = prefs.dailyDate;
+    final currentId = prefs.dailyStickerId;
+
+    // 1. If same day, return saved sticker
+    if (lastDate == todayString && currentId != null) {
+      try {
+        return await _fetchStickerById(currentId);
+      } catch (e) {
+        debugPrint('Error fetching saved daily sticker: $e');
+      }
+    }
+
+    // 2. New day or error: pick new unique sticker
+    final allIds = await _fetchAllStickerIds();
+    if (allIds.isEmpty) throw Exception('No stickers found in database');
+
+    final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
+
+    List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
+
+    if (availableIds.isEmpty) {
+      await prefs.clearHistory();
+      availableIds = allIds;
+    }
+
+    final randomId = availableIds[Random().nextInt(availableIds.length)];
+    final newSticker = await _fetchStickerById(randomId);
+
+    await prefs.setDailySticker(randomId, todayString);
+    await widgetService.updateStickerWidget(newSticker);
+
+    return newSticker;
   }
 }

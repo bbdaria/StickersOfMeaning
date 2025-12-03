@@ -13,8 +13,17 @@ class StickersApp extends StatelessWidget {
     return MaterialApp(
       title: 'Stickers of meaning',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        // Updated seed color to match your gradient
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2596be)),
         useMaterial3: true,
+        // Global AppBar theme: White background, Black icons
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white, // Ensures it stays white in Material 3
+          iconTheme: IconThemeData(color: Colors.black),
+          actionsIconTheme: IconThemeData(color: Colors.black),
+          elevation: 0,
+        ),
       ),
       initialRoute: HomeScreen.routeName,
       routes: {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import '../services/preferences_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
@@ -24,15 +24,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadDailySticker();
+  }
+
+  void _loadDailySticker() {
     final api = context.read<ApiService>();
-    _futureSticker = api.fetchTodaysSticker();
+    final prefs = context.read<PreferencesService>();
+    final widgetService = context.read<WidgetService>();
+
+    setState(() {
+      // Use the new getDailySticker method
+      _futureSticker = api.getDailySticker(prefs, widgetService);
+    });
   }
 
   Future<void> _refreshSticker() async {
-    final api = context.read<ApiService>();
-    setState(() {
-      _futureSticker = api.fetchTodaysSticker();
-    });
+    // For manual refresh, you might want to force a new random sticker?
+    // Or just reload the current daily one. Let's just reload for now.
+    _loadDailySticker();
   }
 
   Future<void> _sendToWidget(Sticker sticker) async {
@@ -48,7 +57,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stickers of meaning'),
+        title: ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF001a7e), // Top gradient color
+              Color(0xFF1d6caf), // Bottom gradient color
+            ],
+          ).createShader(bounds),
+          child: const Text(
+            'Stickers of Meaning',
+            style: TextStyle(
+              // The color must be white for the ShaderMask to apply the gradient correctly
+              color: Colors.white,
+              fontSize: 34, // Larger font
+              fontWeight: FontWeight.w900, // Extra bold look
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
