@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
-              'Todays sticker',
+              "Today's Sticker",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
