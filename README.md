@@ -1,4 +1,4 @@
-# stickers_of_meaning
+# Stickers Of Meaning
 
 Stickers of Meaning is an Android and iOS app built by CS undergraduates at the Technion for (https://stickersofmeaning.org/).
 
