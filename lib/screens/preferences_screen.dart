@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../services/preferences_service.dart';
 
 class PreferencesScreen extends StatefulWidget {
@@ -17,6 +16,26 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   bool _isHebrew = false;
   bool _isQuoteOnly = false;
 
+  InputDecoration _getSearchStyleDecoration() {
+    return InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF0B2A6F)), // Navy Blue
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF0B2A6F), width: 2),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
@@ -32,18 +51,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: prefs.widgetStyle,
+            value: prefs.widgetStyle,
             items: const [
               DropdownMenuItem(value: 'classic', child: Text('Classic')),
               DropdownMenuItem(value: 'minimal', child: Text('Minimal')),
               DropdownMenuItem(value: 'bold', child: Text('Bold')),
             ],
-            onChanged: (value) {
-              if (value != null) {
-                prefs.setWidgetStyle(value);
-              }
-            },
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            onChanged: (v) => v != null ? prefs.setWidgetStyle(v) : null,
+            decoration: _getSearchStyleDecoration(), // Apply Style
           ),
           const SizedBox(height: 24),
           const Text(
@@ -52,18 +67,14 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            initialValue: prefs.widgetSize,
+            value: prefs.widgetSize,
             items: const [
               DropdownMenuItem(value: 'small', child: Text('Small')),
               DropdownMenuItem(value: 'medium', child: Text('Medium')),
               DropdownMenuItem(value: 'large', child: Text('Large')),
             ],
-            onChanged: (value) {
-              if (value != null) {
-                prefs.setWidgetSize(value);
-              }
-            },
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            onChanged: (v) => v != null ? prefs.setWidgetSize(v) : null,
+            decoration: _getSearchStyleDecoration(), // Apply Style
           ),
 
           const SizedBox(height: 32),
@@ -168,12 +179,14 @@ class GradientSwitch extends StatelessWidget {
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
             colors: [
-              Color(0xFF001a7e), // Start color from title
-              Color(0xFF1d6caf), // End color from title
+              Color(0xFF001a7e),
+              Color(0xFF1d6caf),
             ],
           )
               : null,
-          color: value ? null : Colors.grey.shade300,
+          // UPDATED: "Off" state is now explicitly Neutral Light Gray (Colors.grey[300])
+          // If you want it exactly like the hint text, use Color(0xFF8A8A8A)
+          color: value ? null : const Color(0xFFE0E0E0),
         ),
         child: Padding(
           padding: const EdgeInsets.all(2.0),

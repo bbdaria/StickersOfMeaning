@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../widgets/gradient_button.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
@@ -132,6 +132,36 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     );
   }
 
+  Widget _buildGradientChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30), // Pill shape
+          gradient: isSelected
+              ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)], // Button Gradient
+          )
+              : null,
+          color: isSelected ? null : Colors.grey[200], // Grey if not selected
+          boxShadow: isSelected
+              ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,80 +177,98 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   child: Row(
                     children: [
                       Expanded(
+                        // SEARCH BAR with Navy Outline Style
                         child: TextField(
                           controller: _controller,
                           textInputAction: TextInputAction.search,
                           onSubmitted: (_) => _search(),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Search...',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.search),
+                            hintText: 'Type to search...',
+                            hintStyle: const TextStyle(color: Color(0xFF8A8A8A)),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFF0B2A6F)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF0B2A6F), width: 2),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      IconButton.filled(
-                        icon: const Icon(Icons.arrow_forward),
-                        onPressed: _search,
+                      // Forward button can also be gradient if you like
+                      Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)],
+                          ),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                          onPressed: _search,
+                        ),
                       ),
                     ],
                   ),
                 ),
 
+                // FILTERS
                 ExpansionTile(
                   title: const Text("Filters (Topics & Options)"),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text("Search in:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
-                              FilterChip(
-                                label: const Text("Name (Title)"),
-                                selected: _searchInTitle,
-                                onSelected: (v) => setState(() => _searchInTitle = v),
-                              ),
+                              _buildGradientChip("Name (Title)", _searchInTitle, () => setState(() => _searchInTitle = !_searchInTitle)),
                               const SizedBox(width: 8),
-                              FilterChip(
-                                label: const Text("Meaning (Content)"),
-                                selected: _searchInContent,
-                                onSelected: (v) => setState(() => _searchInContent = v),
-                              ),
+                              _buildGradientChip("Meaning (Content)", _searchInContent, () => setState(() => _searchInContent = !_searchInContent)),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           const Text("Topics:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           _availableCategories.isEmpty
-                              ? const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text("Loading topics..."),
-                          )
+                              ? const Text("Loading topics...")
                               : Wrap(
                             spacing: 8,
+                            runSpacing: 8,
                             children: _availableCategories.entries.map((entry) {
                               final isSelected = _selectedCategories.contains(entry.key);
-                              return FilterChip(
-                                label: Text(entry.value),
-                                selected: isSelected,
-                                onSelected: (selected) {
+                              return _buildGradientChip(
+                                entry.value,
+                                isSelected,
+                                    () {
                                   setState(() {
-                                    if (selected) {
-                                      _selectedCategories.add(entry.key);
-                                    } else {
+                                    if (isSelected) {
                                       _selectedCategories.remove(entry.key);
+                                    } else {
+                                      _selectedCategories.add(entry.key);
                                     }
-                                    // UPDATED: Trigger search immediately when topic changes
                                     _search();
                                   });
                                 },
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
@@ -229,10 +277,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               ],
             ),
           ),
-
-          Expanded(
-            child: _buildResults(),
-          ),
+          Expanded(child: _buildResults()),
         ],
       ),
     );
