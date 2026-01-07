@@ -55,6 +55,8 @@ class ApiService {
     final Map<String, dynamic> params = {
       '_embed': 'true',
       'per_page': '20',
+      'status': 'publish',
+      if(query.isNotEmpty) 'search': query,
     };
 
     if (query.trim().isNotEmpty) {

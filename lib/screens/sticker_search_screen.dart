@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../widgets/gradient_button.dart';
+
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
+import '../widgets/gradient_button.dart';
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -33,9 +34,11 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   Future<void> _loadCategories() async {
     try {
       final categories = await context.read<ApiService>().fetchCategories();
-      setState(() {
-        _availableCategories = categories;
-      });
+      if (mounted) {
+        setState(() {
+          _availableCategories = categories;
+        });
+      }
     } catch (e) {
       debugPrint('Error loading categories: $e');
     }
@@ -44,8 +47,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   void _search() {
     final query = _controller.text.trim();
 
-    // UPDATED: Allow search if Query has text OR Categories are selected
-    // If BOTH are empty, we clear the results.
     if (query.isEmpty && _selectedCategories.isEmpty) {
       setState(() {
         _futureResults = null;
@@ -53,61 +54,77 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       return;
     }
 
-    // --- SMART FILTER LOGIC ---
     List<String>? searchColumns;
-
-    // Only apply limits if the user explicitly UNCHECKED something.
-    // If both are true (default), we leave searchColumns as null.
-    // This lets WordPress use its default powerful search.
     if (_searchInTitle && !_searchInContent) {
-      searchColumns = ['post_title']; // Search ONLY Title
+      searchColumns = ['post_title'];
     } else if (!_searchInTitle && _searchInContent) {
-      searchColumns = ['post_content', 'post_excerpt']; // Search ONLY Content
+      searchColumns = ['post_content', 'post_excerpt'];
     }
-    // If both are true: searchColumns remains null -> Searches Everything.
-    // If both are false: searchColumns remains null -> Searches Everything.
 
     final api = context.read<ApiService>();
     setState(() {
       _futureResults = api.searchStickers(
         query: query,
         categoryIds: _selectedCategories.toList(),
-        searchIn: searchColumns, // Pass null to search everywhere
+        searchIn: searchColumns,
       );
     });
   }
 
-  // ... (keep _showStickerDetails exactly as it was) ...
   void _showStickerDetails(Sticker sticker) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         contentPadding: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (sticker.imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(
-                  sticker.imageUrl,
-                  height: 200,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                  const SizedBox(height: 100, child: Icon(Icons.broken_image)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (sticker.imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: Image.network(
+                    sticker.imageUrl,
+                    fit: BoxFit.contain, // Keeps the dynamic fit we added
+                    errorBuilder: (_, __, ___) =>
+                    const SizedBox(height: 100, child: Icon(Icons.broken_image)),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // 1. The Quote (Content)
+                    if (sticker.content.isNotEmpty) ...[
+                      Text(
+                        '"${sticker.content}"', // Added quotes for styling
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontStyle: FontStyle.italic, // Italic for quotes
+                          color: Colors.black87,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // 2. The Name (Title)
+                    Text(
+                      sticker.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold, // Bold for the name
+                        color: Color(0xFF001a7e),    // Brand blue color
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text(
-                sticker.text,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
@@ -115,7 +132,8 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
-          ElevatedButton.icon(
+          GradientButton(
+            icon: Icons.widgets,
             onPressed: () async {
               Navigator.pop(ctx);
               await context.read<WidgetService>().updateStickerWidget(sticker);
@@ -124,29 +142,29 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 const SnackBar(content: Text('Widget updated successfully!')),
               );
             },
-            icon: const Icon(Icons.widgets),
-            label: const Text('Set as Widget'),
+            child: const Text('Set as Widget'),
           ),
         ],
       ),
     );
   }
 
+  // Helper for Gradient Chips
   Widget _buildGradientChip(String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30), // Pill shape
+          borderRadius: BorderRadius.circular(30),
           gradient: isSelected
               ? const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)], // Button Gradient
+            colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)],
           )
               : null,
-          color: isSelected ? null : Colors.grey[200], // Grey if not selected
+          color: isSelected ? null : Colors.grey[200],
           boxShadow: isSelected
               ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))]
               : null,
@@ -177,7 +195,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        // SEARCH BAR with Navy Outline Style
                         child: TextField(
                           controller: _controller,
                           textInputAction: TextInputAction.search,
@@ -206,7 +223,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Forward button can also be gradient if you like
                       Container(
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
@@ -225,51 +241,58 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   ),
                 ),
 
-                // FILTERS
                 ExpansionTile(
                   title: const Text("Filters (Topics & Options)"),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Search in:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Row(
+                    // --- FIX IS APPLIED HERE ---
+                    ConstrainedBox(
+                      // Limit the height of the expanded area to 300 pixels
+                      // This prevents it from taking up the entire screen and overflowing
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildGradientChip("Name (Title)", _searchInTitle, () => setState(() => _searchInTitle = !_searchInTitle)),
-                              const SizedBox(width: 8),
-                              _buildGradientChip("Meaning (Content)", _searchInContent, () => setState(() => _searchInContent = !_searchInContent)),
+                              const Text("Search in:", style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _buildGradientChip("Name (Title)", _searchInTitle, () => setState(() => _searchInTitle = !_searchInTitle)),
+                                  const SizedBox(width: 8),
+                                  _buildGradientChip("Meaning (Content)", _searchInContent, () => setState(() => _searchInContent = !_searchInContent)),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Text("Topics:", style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              _availableCategories.isEmpty
+                                  ? const Text("Loading topics...")
+                                  : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _availableCategories.entries.map((entry) {
+                                  final isSelected = _selectedCategories.contains(entry.key);
+                                  return _buildGradientChip(
+                                    entry.value,
+                                    isSelected,
+                                        () {
+                                      setState(() {
+                                        if (isSelected) {
+                                          _selectedCategories.remove(entry.key);
+                                        } else {
+                                          _selectedCategories.add(entry.key);
+                                        }
+                                        _search();
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          const Text("Topics:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          _availableCategories.isEmpty
-                              ? const Text("Loading topics...")
-                              : Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _availableCategories.entries.map((entry) {
-                              final isSelected = _selectedCategories.contains(entry.key);
-                              return _buildGradientChip(
-                                entry.value,
-                                isSelected,
-                                    () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedCategories.remove(entry.key);
-                                    } else {
-                                      _selectedCategories.add(entry.key);
-                                    }
-                                    _search();
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -277,19 +300,20 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               ],
             ),
           ),
-          Expanded(child: _buildResults()),
+
+          Expanded(
+            child: _buildResults(),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildResults() {
-    // If user hasn't searched yet, show instruction
     if (_futureResults == null) {
       return const Center(child: Text('Select a topic or type a search term.'));
     }
 
-    // ... (keep the rest of _buildResults exactly as it was) ...
     return FutureBuilder<List<Sticker>>(
       future: _futureResults,
       builder: (context, snapshot) {
@@ -322,7 +346,12 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               )
                   : const Icon(Icons.sticky_note_2),
               title: Text(sticker.text),
-              onTap: () => _showStickerDetails(sticker),
+              onTap: () {
+                // --- ADD THIS DEBUG PRINT ---
+                debugPrint('Sticker Clicked: ID=${sticker.id}, Text=${sticker.text}, Content=${sticker.content}, Image=${sticker.imageUrl}');
+
+                _showStickerDetails(sticker);
+              },
             );
           },
         );
