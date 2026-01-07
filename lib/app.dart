@@ -4,6 +4,8 @@ import 'screens/home_screen.dart';
 import 'screens/preferences_screen.dart';
 import 'screens/sticker_search_screen.dart';
 import 'screens/todays_sticker_screen.dart';
+import 'screens/daily_sticker_settings_screen.dart';
+import 'screens/widget_settings_screen.dart';
 
 class StickersApp extends StatelessWidget {
   const StickersApp({super.key});
@@ -82,6 +84,8 @@ class StickersApp extends StatelessWidget {
         PreferencesScreen.routeName: (_) => const PreferencesScreen(),
         StickerSearchScreen.routeName: (_) => const StickerSearchScreen(),
         TodaysStickerScreen.routeName: (_) => const TodaysStickerScreen(),
+        DailyStickerSettingsScreen.routeName: (_) => const DailyStickerSettingsScreen(),
+        WidgetSettingsScreen.routeName: (_) => const WidgetSettingsScreen(),
       },
     );
   }

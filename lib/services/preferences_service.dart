@@ -2,43 +2,82 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesService extends ChangeNotifier {
-  static const _keyWidgetStyle = 'widget_style';
-  static const _keyWidgetSize = 'widget_size';
-
   late SharedPreferences _prefs;
 
-  String _widgetStyle = 'classic'; // for example
-  String _widgetSize = 'medium';
+  // --- Keys ---
+  static const _keyLanguage = 'app_language'; // 'en' or 'he'
+  static const _keyStickerSource = 'sticker_source'; // 'web' or 'pool'
+  static const _keyStickerFilters = 'sticker_filters'; // List of Category IDs
 
+  static const _keyWidgetFontSize = 'widget_font_size'; // 'small', 'medium', 'large'
+  static const _keyWidgetShowImage = 'widget_show_image'; // bool
+
+  // Legacy/Existing keys (keeping them if needed)
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
 
+  // --- Defaults ---
+  String _language = 'en';
+  String _stickerSource = 'web';
+  List<String> _stickerFilters = [];
+  String _widgetFontSize = 'medium';
+  bool _widgetShowImage = true;
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    _widgetStyle = _prefs.getString(_keyWidgetStyle) ?? _widgetStyle;
-    _widgetSize = _prefs.getString(_keyWidgetSize) ?? _widgetSize;
+
+    _language = _prefs.getString(_keyLanguage) ?? 'en';
+    _stickerSource = _prefs.getString(_keyStickerSource) ?? 'web';
+    _stickerFilters = _prefs.getStringList(_keyStickerFilters) ?? [];
+    _widgetFontSize = _prefs.getString(_keyWidgetFontSize) ?? 'medium';
+    _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
   }
 
-  String get widgetStyle => _widgetStyle;
-  String get widgetSize => _widgetSize;
+  // --- Getters ---
+  String get language => _language;
+  String get stickerSource => _stickerSource;
+  List<String> get stickerFilters => _stickerFilters;
+  String get widgetFontSize => _widgetFontSize;
+  bool get widgetShowImage => _widgetShowImage;
 
   String? get dailyDate => _prefs.getString(_keyDailyDate);
   int? get dailyStickerId => _prefs.getInt(_keyDailyStickerId);
   List<String> get seenStickerIds => _prefs.getStringList(_keySeenStickers) ?? [];
 
-  Future<void> setWidgetStyle(String value) async {
-    _widgetStyle = value;
-    await _prefs.setString(_keyWidgetStyle, value);
+  // --- Setters ---
+
+  Future<void> setLanguage(String value) async {
+    _language = value;
+    await _prefs.setString(_keyLanguage, value);
     notifyListeners();
   }
 
-  Future<void> setWidgetSize(String value) async {
-    _widgetSize = value;
-    await _prefs.setString(_keyWidgetSize, value);
+  Future<void> setStickerSource(String value) async {
+    _stickerSource = value;
+    await _prefs.setString(_keyStickerSource, value);
     notifyListeners();
   }
 
+  Future<void> setStickerFilters(List<String> value) async {
+    _stickerFilters = value;
+    await _prefs.setStringList(_keyStickerFilters, value);
+    notifyListeners();
+  }
+
+  Future<void> setWidgetFontSize(String value) async {
+    _widgetFontSize = value;
+    await _prefs.setString(_keyWidgetFontSize, value);
+    notifyListeners();
+  }
+
+  Future<void> setWidgetShowImage(bool value) async {
+    _widgetShowImage = value;
+    await _prefs.setBool(_keyWidgetShowImage, value);
+    notifyListeners();
+  }
+
+  // --- Legacy Methods ---
   Future<void> setDailySticker(int id, String date) async {
     await _prefs.setInt(_keyDailyStickerId, id);
     await _prefs.setString(_keyDailyDate, date);
