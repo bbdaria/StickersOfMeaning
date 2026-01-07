@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onPressed: onTap,
       child: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 28),
+          Icon(icon, color: Colors.white, size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const Text(
               "Today's Sticker",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF001a7e)),
             ),
             const SizedBox(height: 8),
             FutureBuilder<Sticker>(
@@ -214,9 +214,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 24),
             const Text(
               'More',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF001a7e)),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             _buildMenuButton(
               title: 'Sticker database search',
               subtitle: 'Find stickers by topic and author',

@@ -47,7 +47,7 @@ class PreferencesScreen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Colors.grey, width: 0.5),
+              side: const BorderSide(color: Colors.grey, width: 1.1),
             ),
             child: ListTile(
               leading: const Icon(Icons.calendar_today, color: Color(0xFF001a7e)),
@@ -67,7 +67,7 @@ class PreferencesScreen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Colors.grey, width: 0.5),
+              side: const BorderSide(color: Colors.grey, width: 1.1),
             ),
             child: ListTile(
               leading: const Icon(Icons.widgets, color: Color(0xFF001a7e)),

@@ -26,7 +26,7 @@ class GradientButton extends StatelessWidget {
           ],
         ),
         // Pill-shaped corners
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(40),
         // Subtle shadow for depth
         boxShadow: [
           BoxShadow(
