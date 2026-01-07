@@ -8,6 +8,7 @@ import '../services/widget_service.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
 import 'todays_sticker_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/';
@@ -57,25 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: ShaderMask(
-          shaderCallback: (bounds) => const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF001a7e), // Top gradient color
-              Color(0xFF1d6caf), // Bottom gradient color
-            ],
-          ).createShader(bounds),
-          child: const Text(
-            'Stickers of Meaning',
-            style: TextStyle(
-              // The color must be white for the ShaderMask to apply the gradient correctly
-              color: Colors.white,
-              fontSize: 34, // Larger font
-              fontWeight: FontWeight.w900, // Extra bold look
-            ),
-          ),
+        title: SvgPicture.asset(
+          'assets/icons/Logo.svg',
+          height: 40,
+          fit: BoxFit.contain,
         ),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -149,13 +137,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         alignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                TodaysStickerScreen.routeName,
-                              );
+                            onPressed: () async {
+                              final uri = Uri.parse(sticker.postUrl);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication
+                                );
+                              }
                             },
-                            child: const Text('Open details'),
+                            child: const Text('See more info in website'),
                           ),
                           TextButton(
                             onPressed: () => _sendToWidget(sticker),
