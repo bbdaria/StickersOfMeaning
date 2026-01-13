@@ -94,12 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // Icon with light blue background
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
                     color: Color(0xFFE3F2FD),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, color: const Color(0xFF1E3A8A), size: 18),
+                  child: Icon(icon, color: const Color(0xFF1E3A8A), size: 20),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         title,
                         style: const TextStyle(
                           color: Colors.black87,
-                          fontSize: 14,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -121,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             subtitle,
                             style: TextStyle(
                               color: Colors.grey[600],
-                              fontSize: 11,
+                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text(
               "Today's Sticker",
               style: TextStyle(
-                fontSize: 26,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1E3A8A),
               ),
@@ -324,9 +324,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text(
               'More',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Color(0xFF1E3A8A),
               ),
             ),
             const SizedBox(height: 10),
