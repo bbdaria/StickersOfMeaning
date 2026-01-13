@@ -63,7 +63,7 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Error loading todays sticker: ${snapshot.error}',
+                'Error loading today\'s sticker: ${snapshot.error}',
                 style: const TextStyle(color: Colors.red),
               ),
             );
@@ -78,11 +78,14 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
               if (sticker.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    sticker.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.broken_image, size: 64),
+                  child: AspectRatio(
+                    aspectRatio: 1.0,
+                    child: Image.network(
+                      sticker.imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.broken_image, size: 64),
+                    ),
                   ),
                 ),
               const SizedBox(height: 16),

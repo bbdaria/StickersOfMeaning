@@ -71,7 +71,7 @@ class ApiService {
     debugPrint('Searching Sticker URL: $uri');
 
     final response = await http.get(uri);
-
+    debugPrint('Response Status Code: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('Failed to search: ${response.statusCode}');
     }
