@@ -311,7 +311,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
   Widget _buildResults() {
     if (_futureResults == null) {
-      return const Center(child: Text('Select a topic or type a search term.'));
+      return const Center(child: Text(''));
     }
 
     return FutureBuilder<List<Sticker>>(

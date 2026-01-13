@@ -14,6 +14,7 @@ class WidgetSettingsScreen extends StatefulWidget {
 
 class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   bool _showImage = true;
+  double _fontSize = 16.0; // Default
 
   @override
   void initState() {
@@ -24,66 +25,76 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = context.read<PreferencesService>();
     final showImage = await prefs.getWidgetShowImage();
+    final fontSize = await prefs.getWidgetFontSize();
     if (mounted) {
       setState(() {
         _showImage = showImage;
+        _fontSize = fontSize;
       });
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = context.read<PreferencesService>();
+    await prefs.setWidgetShowImage(_showImage);
+    await prefs.setWidgetFontSize(_fontSize);
+
+    if (mounted) {
+      await context.read<WidgetService>().refreshWidgetSettings();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Widget updated!'),
+          duration: Duration(milliseconds: 500),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final prefs = context.watch<PreferencesService>();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Widget Preferences')),
+      appBar: AppBar(title: const Text('Widget Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
         children: [
-          // 1. Font Size
-          const Text('Font Size', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: prefs.widgetFontSize,
-            items: const [
-              DropdownMenuItem(value: 'small', child: Text('Small')),
-              DropdownMenuItem(value: 'medium', child: Text('Medium')),
-              DropdownMenuItem(value: 'large', child: Text('Large')),
-            ],
-            onChanged: (val) {
-              if (val != null) prefs.setWidgetFontSize(val);
-            },
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.format_size),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 2. With/Without Image
+          // 1. Show Image Toggle
           SwitchListTile(
             title: const Text('Show Image in Widget'),
             subtitle: const Text('If disabled, only the sticker text will be shown.'),
             value: _showImage,
-            onChanged: (bool value) async {
+            onChanged: (bool value) {
               setState(() => _showImage = value);
-
-              // 1. Save to App Preferences
-              await context.read<PreferencesService>().setWidgetShowImage(value);
-
-              // 2. TRIGGER THE WIDGET UPDATE IMMEDIATELY
-              if (mounted) {
-                await context.read<WidgetService>().refreshWidgetSettings();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Widget settings updated!'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              }
+              _saveSettings();
             },
+          ),
+          const Divider(),
+
+          // 2. Font Size Slider (Only visible if Image is OFF)
+          ListTile(
+            title: const Text('Widget Font Size'),
+            subtitle: Text('${_fontSize.toInt()} sp'),
+            enabled: !_showImage, // Disable if image is ON (since text is hidden anyway)
+          ),
+          Slider(
+            value: _fontSize,
+            min: 12.0,
+            max: 40.0,
+            divisions: 28,
+            label: _fontSize.round().toString(),
+            onChanged: !_showImage
+                ? (value) {
+              setState(() => _fontSize = value);
+            }
+                : null, // Disable slider if showing image
+            onChangeEnd: (value) {
+              _saveSettings(); // Only save/update when user releases the slider
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "Preview Text Size",
+              style: TextStyle(fontSize: _fontSize),
+            ),
           ),
         ],
       ),

@@ -14,26 +14,23 @@ class WidgetService {
     await HomeWidget.setAppGroupId('group.stickers.of.meaning');
   }
 
-  // --- 1. REFRESH & RECOVER (Call this from Settings) ---
+  // --- 1. REFRESH SETTINGS (Called by Slider) ---
   Future<void> refreshWidgetSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final bool showImage = prefs.getBool('widget_show_image') ?? true;
+    final double fontSize = prefs.getDouble('widget_font_size') ?? 16.0;
 
-    // RECOVERY LOGIC: If turning ON, ensure we actually have the image file!
+    // Recovery logic (Image check)
     if (showImage) {
       final savedUrl = prefs.getString('saved_sticker_image_url');
       if (savedUrl != null && savedUrl.isNotEmpty) {
         try {
-          // Check if we need to re-download
           final dir = await getApplicationSupportDirectory();
           final file = File('${dir.path}/widget_image.png');
-
           if (!await file.exists()) {
-            print('DEBUG: Image missing. Downloading recovery image...');
             final response = await http.get(Uri.parse(savedUrl));
             if (response.statusCode == 200) {
               await file.writeAsBytes(response.bodyBytes);
-              // Ensure the widget knows the path
               await HomeWidget.saveWidgetData<String>('sticker_image', file.path);
             }
           }
@@ -43,33 +40,33 @@ class WidgetService {
       }
     }
 
-    // Save the new setting
+    // Save Settings
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
 
-    // Force update
+    // --- FIX: Pass Font Size as String to safely cross to Android ---
+    await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
+    // ---------------------------------------------------------------
+
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,
       iOSName: iosWidgetName,
     );
   }
 
-  // --- 2. UPDATE (Call this from Today's Sticker) ---
+  // --- 2. UPDATE CONTENT (Called by Today's Sticker) ---
   Future<void> updateStickerWidget(Sticker sticker) async {
     String? localImagePath;
 
     final prefs = await SharedPreferences.getInstance();
     final bool showImage = prefs.getBool('widget_show_image') ?? true;
+    final double fontSize = prefs.getDouble('widget_font_size') ?? 16.0;
 
-    // Save URL for future recovery (in case user toggles settings later)
     await prefs.setString('saved_sticker_image_url', sticker.imageUrl);
 
-    // ALWAYS download the image if it exists.
-    // This ensures that if the user toggles "Show Image" later, the file is ready.
     if (sticker.imageUrl.isNotEmpty) {
       try {
         final url = Uri.parse(sticker.imageUrl);
         final response = await http.get(url);
-
         if (response.statusCode == 200) {
           final dir = await getApplicationSupportDirectory();
           final file = File('${dir.path}/widget_image.png');
@@ -81,10 +78,13 @@ class WidgetService {
       }
     }
 
-    // Save Data
     await HomeWidget.saveWidgetData<String>('sticker_text', sticker.text);
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_image', localImagePath);
+
+    // --- FIX: Pass Font Size as String here too ---
+    await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
+    // ----------------------------------------------
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,

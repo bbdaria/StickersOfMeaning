@@ -21,7 +21,7 @@ class PreferencesService extends ChangeNotifier {
   String _language = 'en';
   String _stickerSource = 'web';
   List<String> _stickerFilters = [];
-  String _widgetFontSize = 'medium';
+  double _widgetFontSize = 16.0;
   bool _widgetShowImage = true;
 
   Future<void> init() async {
@@ -30,7 +30,7 @@ class PreferencesService extends ChangeNotifier {
     _language = _prefs.getString(_keyLanguage) ?? 'en';
     _stickerSource = _prefs.getString(_keyStickerSource) ?? 'web';
     _stickerFilters = _prefs.getStringList(_keyStickerFilters) ?? [];
-    _widgetFontSize = _prefs.getString(_keyWidgetFontSize) ?? 'medium';
+    _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
   }
 
@@ -38,7 +38,7 @@ class PreferencesService extends ChangeNotifier {
   String get language => _language;
   String get stickerSource => _stickerSource;
   List<String> get stickerFilters => _stickerFilters;
-  String get widgetFontSize => _widgetFontSize;
+  double get widgetFontSize => _widgetFontSize;
   bool get widgetShowImage => _widgetShowImage;
 
   String? get dailyDate => _prefs.getString(_keyDailyDate);
@@ -65,10 +65,24 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setWidgetFontSize(String value) async {
-    _widgetFontSize = value;
-    await _prefs.setString(_keyWidgetFontSize, value);
-    notifyListeners();
+  Future<void> setWidgetFontSize(double size) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('widget_font_size', size);
+  }
+
+  Future<double> getWidgetFontSize() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('widget_font_size') ?? 16.0;
+  }
+
+  Future<bool> getWidgetShowImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('widget_show_image') ?? true;
+  }
+
+  Future<void> setWidgetShowImage(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('widget_show_image', value);
   }
 
   // Future<void> setWidgetShowImage(bool value) async {
@@ -88,16 +102,6 @@ class PreferencesService extends ChangeNotifier {
       await _prefs.setStringList(_keySeenStickers, history);
     }
     notifyListeners();
-  }
-
-  Future<bool> getWidgetShowImage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('widget_show_image') ?? true;
-  }
-
-  Future<void> setWidgetShowImage(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('widget_show_image', value);
   }
 
   Future<void> clearHistory() async {

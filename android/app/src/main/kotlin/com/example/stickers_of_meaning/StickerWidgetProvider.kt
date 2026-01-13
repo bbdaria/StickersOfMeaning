@@ -4,7 +4,8 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.BitmapFactory
-import android.graphics.Color // <--- Required for Transparent/White background
+import android.graphics.Color
+import android.util.TypedValue // Required for setting text size units
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
@@ -31,13 +32,24 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 // 2. Get Data
                 val text = widgetData.getString("sticker_text", "No Sticker Yet")
                 val imagePath = widgetData.getString("sticker_image", null)
-                // Default to true, but now we actually receive the 'false' from Flutter!
+
+                // Read boolean (default to true if missing)
                 val showImage = widgetData.getBoolean("show_image", true)
 
-                // 3. Set Text
+                // --- FIX: Read Font Size as STRING, then parse to FLOAT ---
+                // We default to "16.0" if the key doesn't exist.
+                val fontSizeStr = widgetData.getString("sticker_font_size", "16.0")
+                // Safely convert string to float. If conversion fails, fallback to 16.0f
+                val fontSize = fontSizeStr?.toFloatOrNull() ?: 16.0f
+                // ----------------------------------------------------------
+
+                // 3. Set Text & Font Size
                 setTextViewText(R.id.widget_text, text)
 
-                // 4. CHECK LOGIC: Can we show the image?
+                // Apply the parsed font size in SP (Scale-independent Pixels)
+                setTextViewTextSize(R.id.widget_text, TypedValue.COMPLEX_UNIT_SP, fontSize)
+
+                // 4. Visibility & Image Logic
                 var imageShown = false
                 if (showImage && imagePath != null) {
                     val file = java.io.File(imagePath)
@@ -54,23 +66,23 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     }
                 }
 
-                // 5. APPLY VISIBILITY & COLORS
+                // 5. Apply Visibility & Background Colors
                 if (imageShown) {
                     // --- MODE A: IMAGE ONLY ---
-                    setViewVisibility(R.id.widget_image, View.VISIBLE) // Show Image
-                    setViewVisibility(R.id.widget_text, View.GONE)     // Hide Text
+                    setViewVisibility(R.id.widget_image, View.VISIBLE)
+                    setViewVisibility(R.id.widget_text, View.GONE)
 
-                    // Bonus: Transparent Background
+                    // Transparent Background
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
                     // --- MODE B: TEXT ONLY ---
-                    setViewVisibility(R.id.widget_image, View.GONE)    // Hide Image
-                    setViewVisibility(R.id.widget_text, View.VISIBLE)  // Show Text
+                    setViewVisibility(R.id.widget_image, View.GONE)
+                    setViewVisibility(R.id.widget_text, View.VISIBLE)
 
-                    // White Background (so black text is readable)
+                    // White Background
                     setInt(R.id.widget_root, "setBackgroundColor", Color.WHITE)
 
-                    // Force text to Black to ensure visibility
+                    // Force Text Color to Black (Visible on White)
                     setInt(R.id.widget_text, "setTextColor", Color.BLACK)
                 }
             }
