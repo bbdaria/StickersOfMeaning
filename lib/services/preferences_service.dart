@@ -71,11 +71,11 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setWidgetShowImage(bool value) async {
-    _widgetShowImage = value;
-    await _prefs.setBool(_keyWidgetShowImage, value);
-    notifyListeners();
-  }
+  // Future<void> setWidgetShowImage(bool value) async {
+  //   _widgetShowImage = value;
+  //   await _prefs.setBool(_keyWidgetShowImage, value);
+  //   notifyListeners();
+  // }
 
   // --- Legacy Methods ---
   Future<void> setDailySticker(int id, String date) async {
@@ -88,6 +88,16 @@ class PreferencesService extends ChangeNotifier {
       await _prefs.setStringList(_keySeenStickers, history);
     }
     notifyListeners();
+  }
+
+  Future<bool> getWidgetShowImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('widget_show_image') ?? true;
+  }
+
+  Future<void> setWidgetShowImage(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('widget_show_image', value);
   }
 
   Future<void> clearHistory() async {

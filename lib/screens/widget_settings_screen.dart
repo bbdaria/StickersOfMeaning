@@ -1,11 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
+import '../services/widget_service.dart';
 
-class WidgetSettingsScreen extends StatelessWidget {
-  static const String routeName = '/settings/widget';
+class WidgetSettingsScreen extends StatefulWidget {
+  static const String routeName = '/widget_settings';
 
   const WidgetSettingsScreen({super.key});
+
+  @override
+  State<WidgetSettingsScreen> createState() => _WidgetSettingsScreenState();
+}
+
+class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
+  bool _showImage = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = context.read<PreferencesService>();
+    final showImage = await prefs.getWidgetShowImage();
+    if (mounted) {
+      setState(() {
+        _showImage = showImage;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +63,26 @@ class WidgetSettingsScreen extends StatelessWidget {
 
           // 2. With/Without Image
           SwitchListTile(
-            title: const Text('Show Image'),
-            subtitle: const Text('Display the sticker image on the widget'),
-            secondary: const Icon(Icons.image),
-            value: prefs.widgetShowImage,
-            onChanged: (val) {
-              prefs.setWidgetShowImage(val);
+            title: const Text('Show Image in Widget'),
+            subtitle: const Text('If disabled, only the sticker text will be shown.'),
+            value: _showImage,
+            onChanged: (bool value) async {
+              setState(() => _showImage = value);
+
+              // 1. Save to App Preferences
+              await context.read<PreferencesService>().setWidgetShowImage(value);
+
+              // 2. TRIGGER THE WIDGET UPDATE IMMEDIATELY
+              if (mounted) {
+                await context.read<WidgetService>().refreshWidgetSettings();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Widget settings updated!'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
             },
           ),
         ],
