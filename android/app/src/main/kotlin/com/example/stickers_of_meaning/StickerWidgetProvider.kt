@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.util.TypedValue // Required for setting text size units
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
@@ -32,24 +32,27 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 // 2. Get Data
                 val text = widgetData.getString("sticker_text", "No Sticker Yet")
                 val imagePath = widgetData.getString("sticker_image", null)
-
-                // Read boolean (default to true if missing)
                 val showImage = widgetData.getBoolean("show_image", true)
 
-                // --- FIX: Read Font Size as STRING, then parse to FLOAT ---
-                // We default to "16.0" if the key doesn't exist.
-                val fontSizeStr = widgetData.getString("sticker_font_size", "16.0")
-                // Safely convert string to float. If conversion fails, fallback to 16.0f
-                val fontSize = fontSizeStr?.toFloatOrNull() ?: 16.0f
-                // ----------------------------------------------------------
+                // --- FIX: ULTRA ROBUST FONT SIZE READING ---
+                // We access the raw map (.all) to avoid ClassCastExceptions.
+                // This handles String, Float, Int, or Long safely.
+                val rawSize = widgetData.all["sticker_font_size"]
+                val fontSize = when (rawSize) {
+                    is String -> rawSize.toFloatOrNull() ?: 16.0f
+                    is Float -> rawSize
+                    is Long -> rawSize.toFloat() // <--- This fixes your specific crash!
+                    is Int -> rawSize.toFloat()
+                    is Double -> rawSize.toFloat()
+                    else -> 16.0f // Default if missing or unknown type
+                }
+                // -------------------------------------------
 
                 // 3. Set Text & Font Size
                 setTextViewText(R.id.widget_text, text)
-
-                // Apply the parsed font size in SP (Scale-independent Pixels)
                 setTextViewTextSize(R.id.widget_text, TypedValue.COMPLEX_UNIT_SP, fontSize)
 
-                // 4. Visibility & Image Logic
+                // 4. Visibility Logic
                 var imageShown = false
                 if (showImage && imagePath != null) {
                     val file = java.io.File(imagePath)
@@ -68,21 +71,17 @@ class StickerWidgetProvider : HomeWidgetProvider() {
 
                 // 5. Apply Visibility & Background Colors
                 if (imageShown) {
-                    // --- MODE A: IMAGE ONLY ---
+                    // MODE A: IMAGE ONLY
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
                     setViewVisibility(R.id.widget_text, View.GONE)
-
-                    // Transparent Background
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // --- MODE B: TEXT ONLY ---
+                    // MODE B: TEXT ONLY
                     setViewVisibility(R.id.widget_image, View.GONE)
                     setViewVisibility(R.id.widget_text, View.VISIBLE)
 
-                    // White Background
+                    // White Background & Black Text
                     setInt(R.id.widget_root, "setBackgroundColor", Color.WHITE)
-
-                    // Force Text Color to Black (Visible on White)
                     setInt(R.id.widget_text, "setTextColor", Color.BLACK)
                 }
             }
