@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+
 import '../services/preferences_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
-import 'todays_sticker_screen.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../widgets/gradient_button.dart';
+
 
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/';
 
+
   const HomeScreen({super.key});
+
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+
 class _HomeScreenState extends State<HomeScreen> {
   Future<Sticker>? _futureSticker;
+
 
   @override
   void initState() {
@@ -29,22 +34,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDailySticker();
   }
 
+
   void _loadDailySticker() {
     final api = context.read<ApiService>();
     final prefs = context.read<PreferencesService>();
     final widgetService = context.read<WidgetService>();
 
+
     setState(() {
-      // Use the new getDailySticker method
       _futureSticker = api.getDailySticker(prefs, widgetService);
     });
   }
 
+
   Future<void> _refreshSticker() async {
-    // For manual refresh, you might want to force a new random sticker?
-    // Or just reload the current daily one. Let's just reload for now.
     _loadDailySticker();
   }
+
 
   Future<void> _sendToWidget(Sticker sticker) async {
     final widgetService = context.read<WidgetService>();
@@ -54,59 +60,100 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
     ).showSnackBar(const SnackBar(content: Text('Widget updated')));
   }
+
+
+  // Redesigned Menu Button (Compact White Card Style)
   Widget _buildMenuButton({
     required String title,
     required String subtitle,
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return GradientButton(
-      onPressed: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                // Icon with light blue background
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE3F2FD),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: const Color(0xFF1E3A8A), size: 18),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 1),
+                          child: Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
+                const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 12),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios, color: Colors.white54, size: 16),
-        ],
+        ),
       ),
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA), // Light off-white background
       appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F7FA),
+        elevation: 0,
         title: SvgPicture.asset(
           'assets/icons/Logo.svg',
-          height: 40,
+          height: 28,
           fit: BoxFit.contain,
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings, color: Colors.black87, size: 22),
             onPressed: () {
               Navigator.pushNamed(context, PreferencesScreen.routeName);
             },
@@ -116,13 +163,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: _refreshSticker,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           children: [
             const Text(
               "Today's Sticker",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF001a7e)),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             FutureBuilder<Sticker>(
               future: _futureSticker,
               builder: (context, snapshot) {
@@ -148,13 +199,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
+
                 final sticker = snapshot.data!;
                 return Card(
-                  elevation: 0,
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.08),
                   clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Color(0xFF001a7e), width: 3.0),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,8 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (sticker.imageUrl.isNotEmpty)
                         AspectRatio(
                           aspectRatio: 16 / 9,
-                          // You can now remove the ClipRRect wrapper if you want,
-                          // or keep it. The Card's clipBehavior handles the edges now.
                           child: Image.network(
                             sticker.imageUrl,
                             fit: BoxFit.cover,
@@ -173,68 +223,131 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(14),
                         child: Text(
                           sticker.text,
                           style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                          textAlign:  TextAlign.center,
+                          textAlign: TextAlign.center,
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                        child: Row(
                           children: [
-                            TextButton(
-                              onPressed: () async {
-                                final uri = Uri.parse(sticker.postUrl);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                }
-                              },
-                              child: const Text('See more info in website'),
+                            // 1. See Info Button (Compact Outlined)
+                            Expanded(
+                              child: SizedBox(
+                                height: 40,
+                                child: OutlinedButton(
+                                  onPressed: () async {
+                                    final uri = Uri.parse(sticker.postUrl);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri,
+                                          mode: LaunchMode.externalApplication);
+                                    }
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    side: const BorderSide(
+                                        color: Color(0xFF1E3A8A), width: 1),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'See Info',
+                                    style: TextStyle(
+                                      color: Color(0xFF1E3A8A),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height:1),
-                            TextButton(
-                              onPressed: () => _sendToWidget(sticker),
-                              child: const Text('Send to widget'),
+                            const SizedBox(width: 10),
+                            // 2. Send to Widget Button (Compact Gradient)
+                            Expanded(
+                              child: Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Color(0xFF1E3A8A),
+                                      Color(0xFF3B82C4)
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF1E3A8A).withOpacity(0.2),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: () => _sendToWidget(sticker),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  child: const Text(
+                                    'Send to Widget',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-
                       ),
                     ],
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'More',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF001a7e)),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _buildMenuButton(
-              title: 'Sticker database search',
+              title: 'Sticker Database Search',
               subtitle: 'Find stickers by topic and author',
               icon: Icons.search,
-              onTap: () => Navigator.pushNamed(context, StickerSearchScreen.routeName),
+              onTap: () =>
+                  Navigator.pushNamed(context, StickerSearchScreen.routeName),
             ),
-            const SizedBox(height: 12),
             _buildMenuButton(
-              title: 'Widget setup',
+              title: 'Widget Setup',
               subtitle: 'Configure widget size and style',
               icon: Icons.widgets,
-              onTap: () => Navigator.pushNamed(context, PreferencesScreen.routeName),
+              onTap: () =>
+                  Navigator.pushNamed(context, PreferencesScreen.routeName),
             ),
-            const SizedBox(height: 12),
             _buildMenuButton(
-              title: 'Our site',
+              title: 'Our Site',
               subtitle: 'Sticker Of Meaning',
-              icon: Icons.computer,
+              icon: Icons.language,
               onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
             ),
             const SizedBox(height: 24),
@@ -244,3 +357,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+
+
