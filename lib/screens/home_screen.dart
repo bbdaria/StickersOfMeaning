@@ -168,9 +168,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const Text(
               "Today's Sticker",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Color(0xFF1E3A8A),
               ),
             ),
             const SizedBox(height: 10),
