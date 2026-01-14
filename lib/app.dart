@@ -6,6 +6,10 @@ import 'screens/sticker_search_screen.dart';
 import 'screens/todays_sticker_screen.dart';
 import 'screens/daily_sticker_settings_screen.dart';
 import 'screens/widget_settings_screen.dart';
+import 'widgets/connectivity_wrapper.dart';
+
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class StickersApp extends StatelessWidget {
   const StickersApp({super.key});
@@ -78,6 +82,13 @@ class StickersApp extends StatelessWidget {
           ),
         ),
       ),
+      navigatorKey: navigatorKey,
+      builder: (context, child) {
+        return ConnectivityWrapper(
+          navigatorKey: navigatorKey,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       initialRoute: HomeScreen.routeName,
       routes: {
         HomeScreen.routeName: (_) => const HomeScreen(),

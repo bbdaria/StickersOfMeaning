@@ -207,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Error loading sticker: ${snapshot.error}',
+                      'Error loading sticker: while connecting',
                       style: const TextStyle(color: Colors.red),
                     ),
                   );
