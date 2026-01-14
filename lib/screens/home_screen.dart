@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
-
+import 'package:url_launcher/url_launcher.dart';
 import '../services/preferences_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
+import 'widget_settings_screen.dart';
+
 
 
 class HomeScreen extends StatefulWidget {
@@ -137,6 +138,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _openMainSite(BuildContext context) async {
+    const url = 'https://stickersofmeaning.org';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open site')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +158,11 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFF5F7FA), // Light off-white background
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
+        leading: IconButton(
+          icon: const Icon(Icons.info_outline),
+          tooltip: 'Visit Site',
+          onPressed: () => _openMainSite(context),
+        ),
         elevation: 0,
         title: SvgPicture.asset(
           'assets/icons/Logo.svg',
@@ -188,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Error loading sticker: ${snapshot.error}',
+                      'Error loading sticker: while connecting',
                       style: const TextStyle(color: Colors.red),
                     ),
                   );
@@ -321,15 +340,15 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const SizedBox(height: 20),
-            const Text(
-              'More',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E3A8A),
-              ),
-            ),
-            const SizedBox(height: 10),
+            // const Text(
+            //   'More',
+            //   style: TextStyle(
+            //     fontSize: 24,
+            //     fontWeight: FontWeight.bold,
+            //     color: Color(0xFF1E3A8A),
+            //   ),
+            // ),
+            // const SizedBox(height: 10),
             _buildMenuButton(
               title: 'Sticker Database Search',
               subtitle: 'Find stickers by topic and author',
@@ -339,17 +358,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             _buildMenuButton(
               title: 'Widget Setup',
-              subtitle: 'Configure widget size and style',
+              subtitle: 'Personalize the widget',
               icon: Icons.widgets,
               onTap: () =>
-                  Navigator.pushNamed(context, PreferencesScreen.routeName),
+                  Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
             ),
-            _buildMenuButton(
-              title: 'Our Site',
-              subtitle: 'Sticker Of Meaning',
-              icon: Icons.language,
-              onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
-            ),
+            // _buildMenuButton(
+            //   title: 'Our Site',
+            //   subtitle: 'Sticker Of Meaning',
+            //   icon: Icons.language,
+            //   onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
+            // ),
             const SizedBox(height: 24),
           ],
         ),

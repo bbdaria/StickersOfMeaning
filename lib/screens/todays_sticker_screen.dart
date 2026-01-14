@@ -78,13 +78,14 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
               if (sticker.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: Image.network(
-                      sticker.imageUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 64),
+                  child: Image.network(
+                    sticker.imageUrl,
+                    width: double.infinity, // Fill the width of the screen
+                    fit: BoxFit.fitWidth,   // Scale height to match aspect ratio (no cutting)
+                    errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox(
+                      height: 200,
+                      child: Center(child: Icon(Icons.broken_image, size: 64)),
                     ),
                   ),
                 ),
