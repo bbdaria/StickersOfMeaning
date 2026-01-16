@@ -30,26 +30,26 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
                 // 2. Get Data
-                val text = widgetData.getString("sticker_text", "No Sticker Yet")
-                val imagePath = widgetData.getString("sticker_image", null)
                 val showImage = widgetData.getBoolean("show_image", true)
+                val imagePath = widgetData.getString("sticker_image", null)
 
-                // --- FIX: ULTRA ROBUST FONT SIZE READING ---
-                // We access the raw map (.all) to avoid ClassCastExceptions.
-                // This handles String, Float, Int, or Long safely.
+                // --- SIMPLIFIED: Just read the text. Dart logic ensures this is the Quote. ---
+                val textToShow = widgetData.getString("sticker_text", "Open App to Load") ?: "No Text"
+                // -----------------------------------------------------------------------------
+
+                // Font Size Logic
                 val rawSize = widgetData.all["sticker_font_size"]
                 val fontSize = when (rawSize) {
                     is String -> rawSize.toFloatOrNull() ?: 16.0f
                     is Float -> rawSize
-                    is Long -> rawSize.toFloat() // <--- This fixes your specific crash!
+                    is Long -> rawSize.toFloat()
                     is Int -> rawSize.toFloat()
                     is Double -> rawSize.toFloat()
-                    else -> 16.0f // Default if missing or unknown type
+                    else -> 16.0f
                 }
-                // -------------------------------------------
 
                 // 3. Set Text & Font Size
-                setTextViewText(R.id.widget_text, text)
+                setTextViewText(R.id.widget_text, textToShow)
                 setTextViewTextSize(R.id.widget_text, TypedValue.COMPLEX_UNIT_SP, fontSize)
 
                 // 4. Visibility Logic
@@ -76,7 +76,7 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     setViewVisibility(R.id.widget_text, View.GONE)
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // MODE B: TEXT ONLY
+                    // MODE B: TEXT ONLY (Shows the Quote)
                     setViewVisibility(R.id.widget_image, View.GONE)
                     setViewVisibility(R.id.widget_text, View.VISIBLE)
 

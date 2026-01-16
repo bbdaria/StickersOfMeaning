@@ -14,13 +14,38 @@ class WidgetService {
     await HomeWidget.setAppGroupId('group.stickers.of.meaning');
   }
 
-  // --- 1. REFRESH SETTINGS (Called by Slider) ---
+  // --- HELPER: Logic to pick the correct text ---
+  String _gettextToShow(String lang, String? quoteHe, String? quoteEn, String? content, String? title) {
+    // 1. Try Specific Language Quote
+    if (lang == 'he' && quoteHe != null && quoteHe.isNotEmpty) return quoteHe;
+    if (lang == 'en' && quoteEn != null && quoteEn.isNotEmpty) return quoteEn;
+
+    // 2. Fallback to Main Content (The "Quote" from the DB)
+    if (content != null && content.isNotEmpty) return content;
+
+    // 3. Last Resort: Title (Name)
+    return title ?? "Sticker of Meaning";
+  }
+
+  // --- 1. REFRESH SETTINGS (Called by Language Toggle) ---
   Future<void> refreshWidgetSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final bool showImage = prefs.getBool('widget_show_image') ?? true;
     final double fontSize = prefs.getDouble('widget_font_size') ?? 16.0;
 
-    // Recovery logic (Image check)
+    // 1. Get Current Language
+    final String language = prefs.getString('app_language') ?? 'en';
+
+    // 2. Retrieve the LAST sticker data (Saved in updateStickerWidget)
+    final quoteHe = prefs.getString('latest_sticker_quote_he');
+    final quoteEn = prefs.getString('latest_sticker_quote_en');
+    final content = prefs.getString('latest_sticker_content');
+    final title = prefs.getString('latest_sticker_title');
+
+    // 3. Calculate the correct text NOW (In Dart)
+    final String textToShow = _gettextToShow(language, quoteHe, quoteEn, content, title);
+
+    // 4. Recovery logic (Image check)
     if (showImage) {
       final savedUrl = prefs.getString('saved_sticker_image_url');
       if (savedUrl != null && savedUrl.isNotEmpty) {
@@ -40,12 +65,12 @@ class WidgetService {
       }
     }
 
-    // Save Settings
+    // Save Data
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
-
-    // --- FIX: Pass Font Size as String to safely cross to Android ---
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
-    // ---------------------------------------------------------------
+
+    // --- KEY FIX: Overwrite 'sticker_text' with the QUOTE ---
+    await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,
@@ -60,9 +85,16 @@ class WidgetService {
     final prefs = await SharedPreferences.getInstance();
     final bool showImage = prefs.getBool('widget_show_image') ?? true;
     final double fontSize = prefs.getDouble('widget_font_size') ?? 16.0;
+    final String language = prefs.getString('app_language') ?? 'en';
 
+    // 1. Save Sticker Components locally (So we can switch languages later)
+    await prefs.setString('latest_sticker_quote_he', sticker.heQuote);
+    await prefs.setString('latest_sticker_quote_en', sticker.enQuote);
+    await prefs.setString('latest_sticker_content', sticker.content);
+    await prefs.setString('latest_sticker_title', sticker.text);
     await prefs.setString('saved_sticker_image_url', sticker.imageUrl);
 
+    // 2. Download Image
     if (sticker.imageUrl.isNotEmpty) {
       try {
         final url = Uri.parse(sticker.imageUrl);
@@ -78,13 +110,16 @@ class WidgetService {
       }
     }
 
-    await HomeWidget.saveWidgetData<String>('sticker_text', sticker.text);
+    // 3. Calculate Text (Use Helper)
+    final String textToShow = _gettextToShow(language, sticker.heQuote, sticker.enQuote, sticker.content, sticker.text);
+
+    // 4. Send to Widget
+    // We overwrite 'sticker_text' (which usually holds the name) with the QUOTE.
+    await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
+
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_image', localImagePath);
-
-    // --- FIX: Pass Font Size as String here too ---
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
-    // ----------------------------------------------
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,
