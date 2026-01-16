@@ -363,12 +363,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () =>
                   Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
             ),
-            // _buildMenuButton(
-            //   title: 'Our Site',
-            //   subtitle: 'Sticker Of Meaning',
-            //   icon: Icons.language,
-            //   onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
-            // ),
+            _buildMenuButton(
+              title: 'Our Site',
+              subtitle: 'Sticker Of Meaning',
+              icon: Icons.language,
+              onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
+            ),
             const SizedBox(height: 24),
           ],
         ),
