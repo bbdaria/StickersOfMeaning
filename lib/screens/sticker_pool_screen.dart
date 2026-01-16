@@ -74,7 +74,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Sticker Pool')),
+      appBar: AppBar(title: const Text('My Stickers')),
 
       // --- NEW: Floating Action Button ---
       floatingActionButton: FloatingActionButton(
@@ -97,7 +97,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search your pool...',
+                hintText: 'Search your stickers...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
@@ -116,7 +116,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                   Icon(Icons.collections_bookmark_outlined, size: 64, color: Colors.grey[300]),
                   const SizedBox(height: 16),
                   const Text(
-                    'Your pool is empty.\nTap the + button to add stickers!',
+                    'Your collection is empty.\nTap the + button to add stickers!',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 16),
                   ),
@@ -163,7 +163,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'widget',
-                          child: Row(children: [Icon(Icons.widgets, size: 20, color: Colors.blue), SizedBox(width: 8), Text('Set as Widget')]),
+                          child: Row(children: [Icon(Icons.arrow_back, size: 20, color: Colors.blue), SizedBox(width: 8), Text('Set as Widget')]),
                         ),
                         const PopupMenuItem(
                           value: 'remove',

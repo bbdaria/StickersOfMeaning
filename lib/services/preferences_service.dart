@@ -7,20 +7,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widget_service.dart';
 import '../models/sticker.dart';
 
-
 class PreferencesService extends ChangeNotifier {
   static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
 
   // --- Keys ---
-  static const _keyLanguage = 'app_language'; // 'en' or 'he'
-  static const _keyStickerSource = 'sticker_source'; // 'web' or 'pool'
-  static const _keyStickerFilters = 'sticker_filters'; // List of Category IDs
+  static const _keyLanguage = 'app_language';
+  static const _keyStickerSource = 'sticker_source';
+  static const _keyStickerFilters = 'sticker_filters';
+  static const _keyWidgetFontSize = 'widget_font_size';
+  static const _keyWidgetShowImage = 'widget_show_image';
 
-  static const _keyWidgetFontSize = 'widget_font_size'; // 'small', 'medium', 'large'
-  static const _keyWidgetShowImage = 'widget_show_image'; // bool
-
-  // Legacy/Existing keys (keeping them if needed)
+  // Legacy keys
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
@@ -32,6 +30,9 @@ class PreferencesService extends ChangeNotifier {
   double _widgetFontSize = 16.0;
   bool _widgetShowImage = true;
 
+  // --- NEW: In-Memory Cache for Instant UI ---
+  List<Sticker> _cachedPool = [];
+
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
 
@@ -40,6 +41,23 @@ class PreferencesService extends ChangeNotifier {
     _stickerFilters = _prefs.getStringList(_keyStickerFilters) ?? [];
     _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
+
+    // --- NEW: Load pool into memory once at startup ---
+    _loadPoolToMemory();
+  }
+
+  // --- NEW: Internal loader ---
+  void _loadPoolToMemory() {
+    final String? jsonString = _prefs.getString(_poolKey);
+    if (jsonString != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(jsonString);
+        _cachedPool = decoded.map((e) => Sticker.fromJson(e)).toList();
+      } catch (e) {
+        debugPrint('Error parsing pool: $e');
+        _cachedPool = [];
+      }
+    }
   }
 
   // --- Getters ---
@@ -53,14 +71,11 @@ class PreferencesService extends ChangeNotifier {
   int? get dailyStickerId => _prefs.getInt(_keyDailyStickerId);
   List<String> get seenStickerIds => _prefs.getStringList(_keySeenStickers) ?? [];
 
-  // --- Setters ---
-
+  // --- Setters (Existing) ---
   Future<void> setLanguage(String value) async {
     _language = value;
     await _prefs.setString(_keyLanguage, value);
     notifyListeners();
-
-    // Ensure this line is present to update the widget immediately!
     await WidgetService().refreshWidgetSettings();
   }
 
@@ -77,26 +92,20 @@ class PreferencesService extends ChangeNotifier {
   }
 
   Future<void> setWidgetFontSize(double size) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('widget_font_size', size);
-  }
-
-  Future<double> getWidgetFontSize() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble('widget_font_size') ?? 16.0;
-  }
-
-  Future<bool> getWidgetShowImage() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('widget_show_image') ?? true;
+    _widgetFontSize = size;
+    await _prefs.setDouble(_keyWidgetFontSize, size);
+    notifyListeners();
   }
 
   Future<void> setWidgetShowImage(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('widget_show_image', value);
+    _widgetShowImage = value;
+    await _prefs.setBool(_keyWidgetShowImage, value);
+    notifyListeners();
   }
 
-  // --- Legacy Methods ---
+  Future<double> getWidgetFontSize() async => _widgetFontSize;
+  Future<bool> getWidgetShowImage() async => _widgetShowImage;
+
   Future<void> setDailySticker(int id, String date) async {
     await _prefs.setInt(_keyDailyStickerId, id);
     await _prefs.setString(_keyDailyDate, date);
@@ -114,68 +123,78 @@ class PreferencesService extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------
-  // POOL MANAGEMENT
+  // POOL MANAGEMENT (OPTIMIZED)
   // ---------------------------------------------------------
 
+  // 1. Return the in-memory list (Instant)
   List<Sticker> getStickerPool() {
-    final String? jsonString = _prefs.getString(_poolKey);
-    if (jsonString == null) return [];
-
-    try {
-      final List<dynamic> decoded = jsonDecode(jsonString);
-      return decoded.map((e) => Sticker.fromJson(e)).toList();
-    } catch (e) {
-      return [];
-    }
+    return List.unmodifiable(_cachedPool); // Return copy/view
   }
 
   bool isStickerInPool(int id) {
-    final pool = getStickerPool();
-    return pool.any((s) => s.id == id);
+    return _cachedPool.any((s) => s.id == id);
   }
 
   Future<void> addToPool(Sticker sticker) async {
-    final pool = getStickerPool();
-    if (pool.any((s) => s.id == sticker.id)) return; // Already in pool
+    if (isStickerInPool(sticker.id)) return;
 
-    // 1. Download and Save Image Locally
-    String? localPath;
-    if (sticker.imageUrl.isNotEmpty) {
-      try {
-        localPath = await _downloadAndSaveImage(sticker.imageUrl, sticker.id);
-      } catch (e) {
-        // If download fails, we still save the sticker, just without local image
-        print('Failed to download image for pool: $e');
+    // A. Start image download in background (don't await it for the UI update yet)
+    // We create a temporary sticker with the URL, add it to UI immediately
+    Sticker stickerToSave = sticker;
+
+    // Update Memory
+    _cachedPool.add(stickerToSave);
+
+    // B. INSTANT UPDATE: Tell UI to paint the "filled" ribbon
+    notifyListeners();
+
+    // C. Perform heavy lifting in background
+    try {
+      if (sticker.imageUrl.isNotEmpty) {
+        final localPath = await _downloadAndSaveImage(sticker.imageUrl, sticker.id);
+        // Update the sticker in the list with the local path
+        final index = _cachedPool.indexWhere((s) => s.id == sticker.id);
+        if (index != -1) {
+          _cachedPool[index] = sticker.copyWith(localImagePath: localPath);
+        }
       }
+
+      // Persist to Disk
+      await _savePoolToDisk();
+
+      // Notify again to ensure the local path is available to UI if needed
+      notifyListeners();
+    } catch (e) {
+      print('Background save error: $e');
     }
-
-    // 2. Update Sticker object
-    final newSticker = sticker.copyWith(localImagePath: localPath);
-
-    // 3. Save to List
-    pool.add(newSticker);
-    await _savePoolList(pool);
   }
 
   Future<void> removeFromPool(int id) async {
-    final pool = getStickerPool();
-    final stickerToRemove = pool.firstWhere((s) => s.id == id, orElse: () => pool.first);
+    final index = _cachedPool.indexWhere((s) => s.id == id);
+    if (index == -1) return;
 
-    // 1. Remove local file if exists
+    final stickerToRemove = _cachedPool[index];
+
+    // A. Update Memory
+    _cachedPool.removeAt(index);
+
+    // B. INSTANT UPDATE: Tell UI to paint the "empty" ribbon
+    notifyListeners();
+
+    // C. Cleanup in background
     if (stickerToRemove.localImagePath != null) {
       final file = File(stickerToRemove.localImagePath!);
       if (await file.exists()) {
-        await file.delete();
+        await file.delete().catchError((e) => print(e));
       }
     }
 
-    // 2. Remove from list
-    pool.removeWhere((s) => s.id == id);
-    await _savePoolList(pool);
+    await _savePoolToDisk();
   }
 
-  Future<void> _savePoolList(List<Sticker> pool) async {
-    final jsonList = pool.map((s) => s.toJson()).toList();
+  Future<void> _savePoolToDisk() async {
+    // Encode the in-memory list
+    final jsonList = _cachedPool.map((s) => s.toJson()).toList();
     await _prefs.setString(_poolKey, jsonEncode(jsonList));
   }
 
@@ -183,7 +202,10 @@ class PreferencesService extends ChangeNotifier {
   Future<String> _downloadAndSaveImage(String url, int id) async {
     final directory = await getApplicationDocumentsDirectory();
     final extension = url.split('.').last;
-    final filePath = '${directory.path}/pool_$id.$extension';
+    // Basic sanitization of extension
+    final safeExt = extension.length > 4 ? 'jpg' : extension;
+
+    final filePath = '${directory.path}/pool_$id.$safeExt';
     final file = File(filePath);
 
     final response = await http.get(Uri.parse(url));

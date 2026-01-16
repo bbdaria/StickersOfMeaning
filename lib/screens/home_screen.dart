@@ -7,6 +7,7 @@ import '../services/preferences_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
+import '../widgets/gradient_button.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
 import 'widget_settings_screen.dart';
@@ -206,6 +207,200 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 10),
+            // FutureBuilder<Sticker>(
+            //   future: _futureSticker,
+            //   builder: (context, snapshot) {
+            //     if (snapshot.connectionState == ConnectionState.waiting) {
+            //       return const Center(
+            //         child: Padding(
+            //           padding: EdgeInsets.all(24),
+            //           child: CircularProgressIndicator(),
+            //         ),
+            //       );
+            //     } else if (snapshot.hasError) {
+            //       return Padding(
+            //         padding: const EdgeInsets.all(16),
+            //         child: Text(
+            //           'Error loading sticker: while connecting',
+            //           style: const TextStyle(color: Colors.red),
+            //         ),
+            //       );
+            //     } else if (!snapshot.hasData) {
+            //       return const Padding(
+            //         padding: EdgeInsets.all(16),
+            //         child: Text('No sticker available'),
+            //       );
+            //     }
+            //
+            //
+            //     final sticker = snapshot.data!;
+            //     return Card(
+            //       elevation: 2,
+            //       shadowColor: Colors.black.withOpacity(0.08),
+            //       clipBehavior: Clip.antiAlias,
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(16),
+            //       ),
+            //       child: Column(
+            //         crossAxisAlignment: CrossAxisAlignment.stretch,
+            //         children: [
+            //           if (sticker.imageUrl.isNotEmpty)
+            //             Padding(
+            //               padding: const EdgeInsets.only(top: 12.0), // Adds the gap at the top
+            //               child: AspectRatio(
+            //                 aspectRatio: 16 / 9,
+            //                 child: Image.network(
+            //                   sticker.imageUrl,
+            //                   fit: BoxFit.contain,
+            //                   errorBuilder: (context, error, stackTrace) {
+            //                     return const Center(child: Icon(Icons.broken_image));
+            //                   },
+            //                 ),
+            //               ),
+            //             ),
+            //           Padding(
+            //             padding: const EdgeInsets.all(14),
+            //             child: Text(
+            //               sticker.text,
+            //               style: const TextStyle(
+            //                 fontSize: 18,
+            //                 fontWeight: FontWeight.bold,
+            //               ),
+            //               textAlign: TextAlign.center,
+            //             ),
+            //           ),
+            //           Padding(
+            //             padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+            //             child: Row(
+            //               children: [
+            //                 // 1. See Info Button (Compact Outlined)
+            //                 Expanded(
+            //                   child: SizedBox(
+            //                     height: 40,
+            //                     child: OutlinedButton(
+            //                       onPressed: () async {
+            //                         final uri = Uri.parse(sticker.postUrl);
+            //                         if (await canLaunchUrl(uri)) {
+            //                           await launchUrl(uri,
+            //                               mode: LaunchMode.externalApplication);
+            //                         }
+            //                       },
+            //                       style: OutlinedButton.styleFrom(
+            //                         padding: EdgeInsets.zero,
+            //                         side: const BorderSide(
+            //                             color: Color(0xFF1E3A8A), width: 1),
+            //                         shape: RoundedRectangleBorder(
+            //                           borderRadius: BorderRadius.circular(20),
+            //                         ),
+            //                       ),
+            //                       child: const Text(
+            //                         'See Info',
+            //                         style: TextStyle(
+            //                           color: Color(0xFF1E3A8A),
+            //                           fontWeight: FontWeight.bold,
+            //                           fontSize: 13,
+            //                         ),
+            //                       ),
+            //                     ),
+            //                   ),
+            //                 ),
+            //                 const SizedBox(width: 10),
+            //                 // 2. Send to Widget Button (Compact Gradient)
+            //                 Expanded(
+            //                   child: Container(
+            //                     height: 40,
+            //                     decoration: BoxDecoration(
+            //                       borderRadius: BorderRadius.circular(20),
+            //                       gradient: const LinearGradient(
+            //                         begin: Alignment.topCenter,
+            //                         end: Alignment.bottomCenter,
+            //                         colors: [
+            //                           Color(0xFF1E3A8A),
+            //                           Color(0xFF3B82C4)
+            //                         ],
+            //                       ),
+            //                       boxShadow: [
+            //                         BoxShadow(
+            //                           color: const Color(0xFF1E3A8A).withOpacity(0.2),
+            //                           blurRadius: 4,
+            //                           offset: const Offset(0, 2),
+            //                         ),
+            //                       ],
+            //                     ),
+            //                     child: ElevatedButton(
+            //                       onPressed: () => _sendToWidget(sticker),
+            //                       style: ElevatedButton.styleFrom(
+            //                         backgroundColor: Colors.transparent,
+            //                         shadowColor: Colors.transparent,
+            //                         shape: RoundedRectangleBorder(
+            //                           borderRadius: BorderRadius.circular(20),
+            //                         ),
+            //                         padding: EdgeInsets.zero,
+            //                       ),
+            //                       child: const Text(
+            //                         'Send to Widget',
+            //                         style: TextStyle(
+            //                           color: Colors.white,
+            //                           fontWeight: FontWeight.bold,
+            //                           fontSize: 13,
+            //                         ),
+            //                       ),
+            //                     ),
+            //                   ),
+            //                 ),
+            //                 const SizedBox(width: 10),
+            //                 // 2. Send to Widget Button (Compact Gradient)
+            //                 Expanded(
+            //                   child: Container(
+            //                     height: 40,
+            //                     decoration: BoxDecoration(
+            //                       borderRadius: BorderRadius.circular(20),
+            //                       gradient: const LinearGradient(
+            //                         begin: Alignment.topCenter,
+            //                         end: Alignment.bottomCenter,
+            //                         colors: [
+            //                           Color(0xFF1E3A8A),
+            //                           Color(0xFF3B82C4)
+            //                         ],
+            //                       ),
+            //                       boxShadow: [
+            //                         BoxShadow(
+            //                           color: const Color(0xFF1E3A8A).withOpacity(0.2),
+            //                           blurRadius: 4,
+            //                           offset: const Offset(0, 2),
+            //                         ),
+            //                       ],
+            //                     ),
+            //                     child: ElevatedButton(
+            //                       onPressed: () => _sendToWidget(sticker),
+            //                       style: ElevatedButton.styleFrom(
+            //                         backgroundColor: Colors.transparent,
+            //                         shadowColor: Colors.transparent,
+            //                         shape: RoundedRectangleBorder(
+            //                           borderRadius: BorderRadius.circular(20),
+            //                         ),
+            //                         padding: EdgeInsets.zero,
+            //                       ),
+            //                       child: const Text(
+            //                         'Save',
+            //                         style: TextStyle(
+            //                           color: Colors.white,
+            //                           fontWeight: FontWeight.bold,
+            //                           fontSize: 13,
+            //                         ),
+            //                       ),
+            //                     ),
+            //                   ),
+            //                 ),
+            //               ],
+            //             ),
+            //           ),
+            //         ],
+            //       ),
+            //     );
+            //   },
+            // ),
+
             FutureBuilder<Sticker>(
               future: _futureSticker,
               builder: (context, snapshot) {
@@ -217,11 +412,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 } else if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
                     child: Text(
-                      'Error loading sticker: while connecting',
-                      style: const TextStyle(color: Colors.red),
+                      'Error loading sticker. Please check your connection.',
+                      style: TextStyle(color: Colors.red),
                     ),
                   );
                 } else if (!snapshot.hasData) {
@@ -231,7 +426,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
-
                 final sticker = snapshot.data!;
                 return Card(
                   elevation: 2,
@@ -240,114 +434,148 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: Stack(
                     children: [
-                      if (sticker.imageUrl.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12.0), // Adds the gap at the top
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Image.network(
-                              sticker.imageUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(child: Icon(Icons.broken_image));
-                              },
-                            ),
-                          ),
-                        ),
-                      Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Text(
-                          sticker.text,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
-                        child: Row(
-                          children: [
-                            // 1. See Info Button (Compact Outlined)
-                            Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: OutlinedButton(
-                                  onPressed: () async {
-                                    final uri = Uri.parse(sticker.postUrl);
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri,
-                                          mode: LaunchMode.externalApplication);
-                                    }
+                      // 1. Existing Content (Column)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (sticker.imageUrl.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12.0),
+                              child: AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: Image.network(
+                                  sticker.imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(child: Icon(Icons.broken_image));
                                   },
-                                  style: OutlinedButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    side: const BorderSide(
-                                        color: Color(0xFF1E3A8A), width: 1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'See Info',
-                                    style: TextStyle(
-                                      color: Color(0xFF1E3A8A),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            // 2. Send to Widget Button (Compact Gradient)
-                            Expanded(
-                              child: Container(
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Color(0xFF1E3A8A),
-                                      Color(0xFF3B82C4)
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF1E3A8A).withOpacity(0.2),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: () => _sendToWidget(sticker),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                  ),
-                                  child: const Text(
-                                    'Send to Widget',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
+                          Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Text(
+                              sticker.text,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
+                              textAlign: TextAlign.center,
                             ),
-                          ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+                            child: Row(
+                              children: [
+                                // See Info Button
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 40,
+                                    child: OutlinedButton(
+                                      onPressed: () async {
+                                        final uri = Uri.parse(sticker.postUrl);
+                                        if (await canLaunchUrl(uri)) {
+                                          await launchUrl(uri,
+                                              mode: LaunchMode.externalApplication);
+                                        }
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        side: const BorderSide(
+                                            color: Color(0xFF1E3A8A), width: 1),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'See Info',
+                                        style: TextStyle(
+                                          color: Color(0xFF1E3A8A),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                // Send to Widget Button
+                                Expanded(
+                                  child: Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Color(0xFF1E3A8A),
+                                          Color(0xFF3B82C4)
+                                        ],
+                                      ),
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: () => _sendToWidget(sticker),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                      child: const Text(
+                                        'Send to Widget',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // 2. NEW: Floating Ribbon Button (Top Right)
+                      Positioned(
+                        top: 0,
+                        right: 4,
+                        child: Consumer<PreferencesService>(
+                          builder: (context, prefs, _) {
+                            final isSaved = prefs.isStickerInPool(sticker.id);
+                            return IconButton(
+                              icon: Icon(
+                                isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                color: const Color(0xFF1E3A8A),
+                                size: 30,
+                              ),
+                              tooltip: isSaved ? 'Remove from Pool' : 'Save to Pool',
+                              onPressed: () async {
+                                if (isSaved) {
+                                  await prefs.removeFromPool(sticker.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Removed from pool')),
+                                    );
+                                  }
+                                } else {
+                                  await prefs.addToPool(sticker);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Saved to pool!')),
+                                    );
+                                  }
+                                }
+                              },
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -355,27 +583,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+
             const SizedBox(height: 20),
-            // const Text(
-            //   'More',
-            //   style: TextStyle(
-            //     fontSize: 24,
-            //     fontWeight: FontWeight.bold,
-            //     color: Color(0xFF1E3A8A),
-            //   ),
-            // ),
-            // const SizedBox(height: 10),
             _buildMenuButton(
-              title: 'Sticker Database Search',
-              subtitle: 'Find stickers by topic and author',
-              icon: Icons.search,
-              onTap: () =>
-                  Navigator.pushNamed(context, StickerSearchScreen.routeName),
-            ),
-            _buildMenuButton(
-              title: 'WIP - POOL',
-              subtitle: '',
-              icon: Icons.widgets,
+              title: 'Manage your stickers',
+              subtitle: 'Explore and add to the collection',
+              icon: Icons.collections,
               onTap: () =>
                   Navigator.pushNamed(context, StickerPoolScreen.routeName),
             ),
