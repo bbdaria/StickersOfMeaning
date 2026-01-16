@@ -244,14 +244,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (sticker.imageUrl.isNotEmpty)
-                        AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Image.network(
-                            sticker.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(child: Icon(Icons.broken_image));
-                            },
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12.0), // Adds the gap at the top
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: Image.network(
+                              sticker.imageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(child: Icon(Icons.broken_image));
+                              },
+                            ),
                           ),
                         ),
                       Padding(
