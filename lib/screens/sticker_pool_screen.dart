@@ -60,14 +60,14 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
     await context.read<PreferencesService>().removeFromPool(id);
     _loadPool();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from pool')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from pool'), duration: Duration(milliseconds: 750)));
     }
   }
 
   Future<void> _setAsWidget(Sticker sticker) async {
     await context.read<WidgetService>().updateStickerWidget(sticker);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Widget Updated!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Widget Updated!'), duration: Duration(milliseconds: 750)));
     }
   }
 
