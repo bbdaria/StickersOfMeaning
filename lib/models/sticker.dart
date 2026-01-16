@@ -2,19 +2,29 @@ import 'package:html_unescape/html_unescape.dart';
 
 class Sticker {
   final int id;
-  final String text;    // The Title (Name of the person)
+  final String text;    // The Title (Hebrew Name)
   final String content; // The Quote (Content/Meaning)
   final String imageUrl;
   final String postUrl;
   final DateTime? date;
 
+  // New Fields
+  final String nameInEnglish;
+  final String nameInHebrew;
+  final String enQuote;
+  final String heQuote;
+
   Sticker({
     required this.id,
     required this.text,
-    required this.content, // Add this
+    required this.content,
     required this.imageUrl,
     required this.postUrl,
     this.date,
+    this.nameInEnglish = '',
+    this.nameInHebrew = '',
+    this.enQuote = '',
+    this.heQuote = '',
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
@@ -26,56 +36,80 @@ class Sticker {
       textContent = unescape.convert(json['title']['rendered']);
     }
 
-    // 2. Find the Quote (The Meaning)
-    String quoteContent = '';
+    // --- NEW: Parse Meta Fields for English/Hebrew Data ---
+    String nameEn = '';
+    String nameHe = '';
+    String quoteEn = '';
+    String quoteHe = '';
 
-    // List of probable keys where the quote might be hidden
-    // (JetEngine/ACF often uses these names)
-    const possibleKeys = [
-      'quote', 'motto', 'message', 'meaning', 'description',
-      'sticker_text', 'sticker_quote', 'life_rule'
-    ];
-
-    // A. Check Root Level Custom Fields (JetEngine often exposes them here)
-    for (var key in possibleKeys) {
-      if (json[key] != null && json[key].toString().isNotEmpty) {
-        quoteContent = unescape.convert(json[key].toString());
-        break;
+    if (json['meta'] != null) {
+      if (json['meta']['name_in_english'] != null) {
+        nameEn = unescape.convert(json['meta']['name_in_english'].toString());
+      }
+      if (json['meta']['name_in_hebrew'] != null) {
+        nameHe = unescape.convert(json['meta']['name_in_hebrew'].toString());
+      }
+      if (json['meta']['en_quote'] != null) {
+        quoteEn = unescape.convert(json['meta']['en_quote'].toString());
+      }
+      if (json['meta']['he_quote'] != null) {
+        quoteHe = unescape.convert(json['meta']['he_quote'].toString());
       }
     }
+    // -------------------------------------------------------
 
-    // B. Check "meta" fields
-    if (quoteContent.isEmpty && json['meta'] != null) {
+    // 2. Find the Quote (The Meaning)
+    // [Existing logic remains, but we prioritize meta if found]
+    String quoteContent = quoteHe.isNotEmpty ? quoteHe : '';
+
+    if (quoteContent.isEmpty) {
+      // List of probable keys where the quote might be hidden
+      const possibleKeys = [
+        'quote', 'motto', 'message', 'meaning', 'description',
+        'sticker_text', 'sticker_quote', 'life_rule'
+      ];
+
+      // [Existing Fallback Logic...]
+      // A. Check Root Level
       for (var key in possibleKeys) {
-        if (json['meta'][key] != null && json['meta'][key].toString().isNotEmpty) {
-          quoteContent = unescape.convert(json['meta'][key].toString());
+        if (json[key] != null && json[key].toString().isNotEmpty) {
+          quoteContent = unescape.convert(json[key].toString());
           break;
         }
       }
-    }
 
-    // C. Fallback: Check Content/Excerpt (if they decide to use it later)
-    if (quoteContent.isEmpty) {
-      if (json['content'] != null && json['content']['rendered'] != null && json['content']['rendered'].toString().isNotEmpty) {
-        String raw = json['content']['rendered'];
-        String stripped = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
-        if (stripped.isNotEmpty) quoteContent = unescape.convert(stripped);
-      }
-    }
-
-    // D. Fallback: Check Image Caption/Alt (If provided via _embed)
-    if (quoteContent.isEmpty && json['_embedded'] != null && json['_embedded']['wp:featuredmedia'] != null) {
-      var mediaList = json['_embedded']['wp:featuredmedia'];
-      if (mediaList is List && mediaList.isNotEmpty) {
-        var media = mediaList[0];
-        // Check Caption
-        if (media['caption'] != null && media['caption']['rendered'] != null) {
-          String cap = media['caption']['rendered'].toString().replaceAll(RegExp(r'<[^>]*>'), '').trim();
-          if (cap.isNotEmpty) quoteContent = unescape.convert(cap);
+      // B. Check "meta" fields
+      if (quoteContent.isEmpty && json['meta'] != null) {
+        for (var key in possibleKeys) {
+          if (json['meta'][key] != null && json['meta'][key].toString().isNotEmpty) {
+            quoteContent = unescape.convert(json['meta'][key].toString());
+            break;
+          }
         }
-        // Check Alt Text
-        if (quoteContent.isEmpty && media['alt_text'] != null) {
-          quoteContent = unescape.convert(media['alt_text'].toString());
+      }
+
+      // [Keep existing C and D fallbacks for Content and Image Caption if needed]
+      // C. Fallback: Check Content/Excerpt
+      if (quoteContent.isEmpty) {
+        if (json['content'] != null && json['content']['rendered'] != null && json['content']['rendered'].toString().isNotEmpty) {
+          String raw = json['content']['rendered'];
+          String stripped = raw.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+          if (stripped.isNotEmpty) quoteContent = unescape.convert(stripped);
+        }
+      }
+
+      // D. Fallback: Check Image Caption/Alt
+      if (quoteContent.isEmpty && json['_embedded'] != null && json['_embedded']['wp:featuredmedia'] != null) {
+        var mediaList = json['_embedded']['wp:featuredmedia'];
+        if (mediaList is List && mediaList.isNotEmpty) {
+          var media = mediaList[0];
+          if (media['caption'] != null && media['caption']['rendered'] != null) {
+            String cap = media['caption']['rendered'].toString().replaceAll(RegExp(r'<[^>]*>'), '').trim();
+            if (cap.isNotEmpty) quoteContent = unescape.convert(cap);
+          }
+          if (quoteContent.isEmpty && media['alt_text'] != null) {
+            quoteContent = unescape.convert(media['alt_text'].toString());
+          }
         }
       }
     }
@@ -100,6 +134,11 @@ class Sticker {
       imageUrl: imgUrl,
       postUrl: link,
       date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
+      // Pass new fields
+      nameInEnglish: nameEn,
+      nameInHebrew: nameHe,
+      enQuote: quoteEn,
+      heQuote: quoteHe,
     );
   }
 }
