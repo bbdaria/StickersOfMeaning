@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stickers_of_meaning/screens/sticker_pool_screen.dart';
 
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/gradient_button.dart';
 import 'package:html/parser.dart' show parse;
+import '../services/preferences_service.dart';
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -156,7 +158,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         // 1. The Quote (Content) - Hebrew/Primary
                         if (sticker.content.isNotEmpty) ...[
                           Text(
-                            '${parse(sticker.content).body?.text ?? ''}',
+                            parse(sticker.content).body?.text ?? '',
                             style: const TextStyle(
                               fontSize: 18,
                               fontStyle: FontStyle.italic,
@@ -172,7 +174,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         if (sticker.enQuote.isNotEmpty &&
                             sticker.enQuote != sticker.content) ...[
                           Text(
-                            '${parse(sticker.enQuote).body?.text ?? ''}',
+                            parse(sticker.enQuote).body?.text ?? '',
                             style: TextStyle(
                               fontSize: 16,
                               fontStyle: FontStyle.italic,
@@ -213,29 +215,60 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ],
               ),
             ),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              // ... actions remain the same
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              GradientButton(
-                icon: Icons.widgets,
-                onPressed: () async {
-                  // ... existing logic
-                  Navigator.pop(ctx);
-                  await context.read<WidgetService>().updateStickerWidget(
-                      sticker);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Widget updated successfully!')),
-                  );
-                },
-                child: const Text('Set as Widget'),
-              ),
-            ],
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                // 1. Cancel Button
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+
+                // 2. NEW: Save to Pool Button
+                TextButton.icon(
+                  icon: const Icon(Icons.bookmark_border),
+                  label: const Text('Save to Pool'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF1E3A8A), // Match your app theme
+                  ),
+                  onPressed: () async {
+                    // 1. Add to pool
+                    await context.read<PreferencesService>().addToPool(sticker);
+
+                    if (!mounted) return;
+
+                    // 2. Close the dialog
+                    Navigator.pop(ctx);
+
+                    // 3. Show confirmation
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Saved "${sticker.text}" to your pool!'),
+                        duration: const Duration(seconds: 2),
+                        action: SnackBarAction(
+                          label: 'View',
+                          onPressed: () {
+                            Navigator.pushNamed(context, StickerPoolScreen.routeName);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // 3. Set as Widget Button (Existing)
+                GradientButton(
+                  icon: Icons.widgets,
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await context.read<WidgetService>().updateStickerWidget(sticker);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Widget updated successfully!')),
+                    );
+                  },
+                  child: const Text('Set as Widget'),
+                ),
+              ],
           ),
     );
   }
