@@ -6,6 +6,7 @@ import 'screens/sticker_search_screen.dart';
 import 'screens/todays_sticker_screen.dart';
 import 'screens/daily_sticker_settings_screen.dart';
 import 'screens/widget_settings_screen.dart';
+import 'screens/sticker_pool_screen.dart';
 import 'widgets/connectivity_wrapper.dart';
 
 
@@ -97,6 +98,7 @@ class StickersApp extends StatelessWidget {
         TodaysStickerScreen.routeName: (_) => const TodaysStickerScreen(),
         DailyStickerSettingsScreen.routeName: (_) => const DailyStickerSettingsScreen(),
         WidgetSettingsScreen.routeName: (_) => const WidgetSettingsScreen(),
+        StickerPoolScreen.routeName: (_) => const StickerPoolScreen(),
       },
     );
   }
