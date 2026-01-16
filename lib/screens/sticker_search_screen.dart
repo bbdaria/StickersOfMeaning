@@ -261,7 +261,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Saved "${sticker.text}" to your pool!'),
-                            duration: const Duration(seconds: 2),
+                            duration: const Duration(seconds: 750),
                             action: SnackBarAction(
                               label: 'View',
                               onPressed: () => Navigator.pushNamed(context, StickerPoolScreen.routeName),
@@ -291,7 +291,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         await context.read<WidgetService>().updateStickerWidget(sticker);
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Widget updated successfully!')),
+                          const SnackBar(content: Text('Widget updated successfully!'), duration: Duration(milliseconds: 750)),
                         );
                       },
                     ),

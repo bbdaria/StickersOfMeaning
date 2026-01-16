@@ -44,7 +44,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Widget updated!'),
-          duration: Duration(milliseconds: 500),
+          duration: Duration(milliseconds: 750),
         ),
       );
     }

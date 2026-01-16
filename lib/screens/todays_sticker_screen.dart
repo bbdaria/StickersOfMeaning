@@ -32,7 +32,7 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
   Future<void> _openSite(String url) async {
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No link available for this sticker')),
+        const SnackBar(content: Text('No link available for this sticker'), duration: Duration(milliseconds: 750)),
       );
       return;
     }

@@ -562,14 +562,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   await prefs.removeFromPool(sticker.id);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Removed from pool')),
+                                      const SnackBar(content: Text('Removed from pool'), duration: Duration(seconds: 1)),
                                     );
                                   }
                                 } else {
                                   await prefs.addToPool(sticker);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Saved to pool!')),
+                                      const SnackBar(content: Text('Saved to pool!'), duration: Duration(milliseconds: 750)),
                                     );
                                   }
                                 }
