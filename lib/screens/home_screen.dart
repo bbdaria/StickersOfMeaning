@@ -152,6 +152,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _openExternalUrl(BuildContext context, url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open site')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.info_outline),
           tooltip: 'Visit Site',
-          onPressed: () => _openMainSite(context),
+          onPressed: () => _openExternalUrl(context, 'https://stickersofmeaning.org/contact/'),
         ),
         elevation: 0,
         title: SvgPicture.asset(
@@ -357,14 +370,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pushNamed(context, StickerSearchScreen.routeName),
             ),
             _buildMenuButton(
-              title: 'Widget Setup',
-              subtitle: 'Personalize the widget',
+              title: 'Setup your widget',
+              subtitle: 'Settings and customization',
               icon: Icons.widgets,
               onTap: () =>
                   Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
             ),
             _buildMenuButton(
-              title: 'Our Site',
+              title: 'Visit our site',
               subtitle: 'Sticker Of Meaning',
               icon: Icons.language,
               onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
