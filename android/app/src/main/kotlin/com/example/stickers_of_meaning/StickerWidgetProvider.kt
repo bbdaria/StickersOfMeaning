@@ -30,12 +30,9 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
                 // 2. Get Data
-                val showImage = widgetData.getBoolean("show_image", true)
-                val imagePath = widgetData.getString("sticker_image", null)
-
-                // --- SIMPLIFIED: Just read the text. Dart logic ensures this is the Quote. ---
                 val textToShow = widgetData.getString("sticker_text", "Open App to Load") ?: "No Text"
-                // -----------------------------------------------------------------------------
+                val imagePath = widgetData.getString("sticker_image", null)
+                val showImage = widgetData.getBoolean("show_image", true)
 
                 // Font Size Logic
                 val rawSize = widgetData.all["sticker_font_size"]
@@ -52,7 +49,7 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 setTextViewText(R.id.widget_text, textToShow)
                 setTextViewTextSize(R.id.widget_text, TypedValue.COMPLEX_UNIT_SP, fontSize)
 
-                // 4. Visibility Logic
+                // 4. Check Image Availability
                 var imageShown = false
                 if (showImage && imagePath != null) {
                     val file = java.io.File(imagePath)
@@ -69,20 +66,22 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     }
                 }
 
-                // 5. Apply Visibility & Background Colors
+                // 5. Apply Visibility & Colors
                 if (imageShown) {
                     // MODE A: IMAGE ONLY
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
-                    setViewVisibility(R.id.widget_text, View.GONE)
+                    setViewVisibility(R.id.text_container, View.GONE)
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // MODE B: TEXT ONLY (Shows the Quote)
+                    // MODE B: TEXT + LOGO
                     setViewVisibility(R.id.widget_image, View.GONE)
-                    setViewVisibility(R.id.widget_text, View.VISIBLE)
+                    setViewVisibility(R.id.text_container, View.VISIBLE)
 
-                    // White Background & Black Text
+                    // White Background
                     setInt(R.id.widget_root, "setBackgroundColor", Color.WHITE)
-                    setInt(R.id.widget_text, "setTextColor", Color.BLACK)
+
+                    // Set Text Color to Blue (#1E3A8A)
+                    setTextColor(R.id.widget_text, Color.parseColor("#1E3A8A"))
                 }
             }
 

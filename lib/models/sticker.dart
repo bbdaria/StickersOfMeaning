@@ -33,11 +33,19 @@ class Sticker {
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
     var unescape = HtmlUnescape();
+    String cleanText(dynamic input) {
+      if (input == null) return '';
+      String s = input.toString();
+      // 1. Remove HTML tags
+      s = s.replaceAll(RegExp(r'<[^>]*>'), '');
+      // 2. Decode HTML entities (e.g. &amp; -> &)
+      return unescape.convert(s).trim();
+    }
 
     // 1. Get Title (The Person's Name)
     String textContent = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
-      textContent = unescape.convert(json['title']['rendered']);
+      textContent = cleanText(json['title']['rendered']);
     }
 
     // --- NEW: Parse Meta Fields for English/Hebrew Data ---
@@ -47,18 +55,10 @@ class Sticker {
     String quoteHe = '';
 
     if (json['meta'] != null) {
-      if (json['meta']['name_in_english'] != null) {
-        nameEn = unescape.convert(json['meta']['name_in_english'].toString());
-      }
-      if (json['meta']['name_in_hebrew'] != null) {
-        nameHe = unescape.convert(json['meta']['name_in_hebrew'].toString());
-      }
-      if (json['meta']['en_quote'] != null) {
-        quoteEn = unescape.convert(json['meta']['en_quote'].toString());
-      }
-      if (json['meta']['he_quote'] != null) {
-        quoteHe = unescape.convert(json['meta']['he_quote'].toString());
-      }
+      nameEn = cleanText(json['meta']['name_in_english']);
+      nameHe = cleanText(json['meta']['name_in_hebrew']);
+      quoteEn = cleanText(json['meta']['en_quote']);
+      quoteHe = cleanText(json['meta']['he_quote']);
     }
     // -------------------------------------------------------
 
