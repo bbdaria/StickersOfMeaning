@@ -260,7 +260,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Saved "${sticker.text}" to your pool!'),
+                            content: Text('Sticker saved to collection'),
                             duration: const Duration(seconds: 750),
                             action: SnackBarAction(
                               label: 'View',
