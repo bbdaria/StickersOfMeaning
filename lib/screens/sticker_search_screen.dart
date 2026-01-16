@@ -5,6 +5,7 @@ import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
 import '../widgets/gradient_button.dart';
+import 'package:html/parser.dart' show parse;
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -538,13 +539,13 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
               // PRIMARY TITLE (Hebrew)
               title: Text(
-                  sticker.text,
+                  parse(sticker.heQuote).body?.text ?? '',
                   textDirection: TextDirection.rtl
               ),
 
               // SUBTITLE (English Name)
-              subtitle: sticker.nameInEnglish.isNotEmpty
-                  ? Text(sticker.nameInEnglish)
+              subtitle: sticker.nameInHebrew.isNotEmpty
+                  ? Text(sticker.nameInHebrew)
                   : null,
 
               onTap: () {
