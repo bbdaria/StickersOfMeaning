@@ -356,26 +356,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const SizedBox(height: 20),
-            // const Text(
-            //   'More',
-            //   style: TextStyle(
-            //     fontSize: 24,
-            //     fontWeight: FontWeight.bold,
-            //     color: Color(0xFF1E3A8A),
-            //   ),
-            // ),
-            // const SizedBox(height: 10),
             _buildMenuButton(
-              title: 'Sticker Database Search',
-              subtitle: 'Find stickers by topic and author',
-              icon: Icons.search,
-              onTap: () =>
-                  Navigator.pushNamed(context, StickerSearchScreen.routeName),
-            ),
-            _buildMenuButton(
-              title: 'WIP - POOL',
-              subtitle: '',
-              icon: Icons.widgets,
+              title: 'Manage your stickers',
+              subtitle: 'Explore and add to the collection',
+              icon: Icons.collections,
               onTap: () =>
                   Navigator.pushNamed(context, StickerPoolScreen.routeName),
             ),

@@ -129,227 +129,181 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   void _showStickerDetails(Sticker sticker) {
     showDialog(
       context: context,
-      builder: (ctx) =>
-          AlertDialog(
-            contentPadding: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (sticker.imageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16)),
-                      child: Image.network(
-                        sticker.imageUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                        const SizedBox(
-                            height: 100, child: Icon(Icons.broken_image)),
-                      ),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Shrink to fit content
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Top Section: Image + Close Button (Stack)
+            Stack(
+              children: [
+                // The Image
+                if (sticker.imageUrl.isNotEmpty)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 200, // Fixed height for consistency
+                    child: Image.network(
+                      sticker.imageUrl,
+                      fit: BoxFit.contain, // Contain keeps the whole image visible
+                      errorBuilder: (_, __, ___) =>
+                          Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // 1. The Quote (Content) - Hebrew/Primary
-                        if (sticker.content.isNotEmpty) ...[
-                          Text(
-                            parse(sticker.content).body?.text ?? '',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.black87,
-                            ),
-                            textAlign: TextAlign.center,
-                            textDirection: TextDirection.rtl, // Hebrew support
-                          ),
-                          const SizedBox(height: 12),
-                        ],
+                  )
+                else
+                  Container(
+                    height: 60,
+                    color: const Color(0xFFF5F7FA),
+                    child: const Center(child: Icon(Icons.sticky_note_2, size: 30, color: Colors.grey)),
+                  ),
 
-                        // 2. The English Quote (New)
-                        if (sticker.enQuote.isNotEmpty &&
-                            sticker.enQuote != sticker.content) ...[
-                          Text(
-                            parse(sticker.enQuote).body?.text ?? '',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey[700],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
+                // The "X" Close Button (Top Right)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withOpacity(0.4),
+                    radius: 16,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, size: 18, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                ),
+              ],
+            ),
 
-                        // 3. The Name (Title)
-                        Text(
-                          sticker.text,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF001a7e),
-                          ),
-                          textAlign: TextAlign.center,
+            // 2. Middle Section: Scrollable Text Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  children: [
+                    // Hebrew Quote
+                    if (sticker.content.isNotEmpty) ...[
+                      Text(
+                        parse(sticker.content).body?.text ?? '',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
                         ),
+                        textAlign: TextAlign.center,
+                        textDirection: TextDirection.rtl,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
-                        // 4. The English Name (New)
-                        if (sticker.nameInEnglish.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            sticker.nameInEnglish,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF3B82C4),
+                    // English Quote
+                    if (sticker.enQuote.isNotEmpty && sticker.enQuote != sticker.content) ...[
+                      Text(
+                        parse(sticker.enQuote).body?.text ?? '',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey[700],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Names
+                    Text(
+                      sticker.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E3A8A), // App Blue
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (sticker.nameInEnglish.isNotEmpty)
+                      Text(
+                        sticker.nameInEnglish,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF3B82C4),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 3. Bottom Section: Buttons Side-by-Side
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Row(
+                children: [
+                  // A. Save to Pool Button
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.bookmark_border, size: 20),
+                      label: const Text('Save to Pool'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1E3A8A),
+                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await context.read<PreferencesService>().addToPool(sticker);
+                        if (!mounted) return;
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Saved "${sticker.text}" to your pool!'),
+                            duration: const Duration(seconds: 2),
+                            action: SnackBarAction(
+                              label: 'View',
+                              onPressed: () => Navigator.pushNamed(context, StickerPoolScreen.routeName),
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        ],
-                      ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(width: 12), // Gap between buttons
+
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.widgets, size: 20),
+                      label: const Text('Set as Widget'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF1E3A8A),
+                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await context.read<WidgetService>().updateStickerWidget(sticker);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Widget updated successfully!')),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
             ),
-              actionsAlignment: MainAxisAlignment.center,
-              actions: [
-                // 1. Cancel Button
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-
-                // 2. NEW: Save to Pool Button
-                TextButton.icon(
-                  icon: const Icon(Icons.bookmark_border),
-                  label: const Text('Save to Pool'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF1E3A8A), // Match your app theme
-                  ),
-                  onPressed: () async {
-                    // 1. Add to pool
-                    await context.read<PreferencesService>().addToPool(sticker);
-
-                    if (!mounted) return;
-
-                    // 2. Close the dialog
-                    Navigator.pop(ctx);
-
-                    // 3. Show confirmation
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Saved "${sticker.text}" to your pool!'),
-                        duration: const Duration(seconds: 2),
-                        action: SnackBarAction(
-                          label: 'View',
-                          onPressed: () {
-                            Navigator.pushNamed(context, StickerPoolScreen.routeName);
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                // 3. Set as Widget Button (Existing)
-                GradientButton(
-                  icon: Icons.widgets,
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await context.read<WidgetService>().updateStickerWidget(sticker);
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Widget updated successfully!')),
-                    );
-                  },
-                  child: const Text('Set as Widget'),
-                ),
-              ],
-          ),
+          ],
+        ),
+      ),
     );
   }
-
-  // void _showStickerDetails(Sticker sticker) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (ctx) => AlertDialog(
-  //       contentPadding: EdgeInsets.zero,
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-  //       content: SingleChildScrollView(
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           crossAxisAlignment: CrossAxisAlignment.stretch,
-  //           children: [
-  //             if (sticker.imageUrl.isNotEmpty)
-  //               ClipRRect(
-  //                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-  //                 child: Image.network(
-  //                   sticker.imageUrl,
-  //                   fit: BoxFit.contain, // Keeps the dynamic fit we added
-  //                   errorBuilder: (_, __, ___) =>
-  //                   const SizedBox(height: 100, child: Icon(Icons.broken_image)),
-  //                 ),
-  //               ),
-  //             Padding(
-  //               padding: const EdgeInsets.all(20),
-  //               child: Column(
-  //                 children: [
-  //                   // 1. The Quote (Content)
-  //                   if (sticker.content.isNotEmpty) ...[
-  //                     Text(
-  //                       '"${sticker.content}"', // Added quotes for styling
-  //                       style: const TextStyle(
-  //                         fontSize: 18,
-  //                         fontStyle: FontStyle.italic, // Italic for quotes
-  //                         color: Colors.black87,
-  //                       ),
-  //                       textAlign: TextAlign.center,
-  //                     ),
-  //                     const SizedBox(height: 12),
-  //                   ],
-  //
-  //                   // 2. The Name (Title)
-  //                   Text(
-  //                     sticker.text,
-  //                     style: const TextStyle(
-  //                       fontSize: 16,
-  //                       fontWeight: FontWeight.bold, // Bold for the name
-  //                       color: Color(0xFF001a7e),    // Brand blue color
-  //                     ),
-  //                     textAlign: TextAlign.center,
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //       actionsAlignment: MainAxisAlignment.center,
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(ctx),
-  //           child: const Text('Cancel'),
-  //         ),
-  //         GradientButton(
-  //           icon: Icons.widgets,
-  //           onPressed: () async {
-  //             Navigator.pop(ctx);
-  //             await context.read<WidgetService>().updateStickerWidget(sticker);
-  //             if (!mounted) return;
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(content: Text('Widget updated successfully!')),
-  //             );
-  //           },
-  //           child: const Text('Set as Widget'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   // Helper for Gradient Chips
   Widget _buildGradientChip(String label, bool isSelected, VoidCallback onTap) {
