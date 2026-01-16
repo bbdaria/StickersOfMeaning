@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stickers_of_meaning/screens/sticker_pool_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -371,6 +372,13 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.search,
               onTap: () =>
                   Navigator.pushNamed(context, StickerSearchScreen.routeName),
+            ),
+            _buildMenuButton(
+              title: 'WIP - POOL',
+              subtitle: '',
+              icon: Icons.widgets,
+              onTap: () =>
+                  Navigator.pushNamed(context, StickerPoolScreen.routeName),
             ),
             _buildMenuButton(
               title: 'Setup your widget',

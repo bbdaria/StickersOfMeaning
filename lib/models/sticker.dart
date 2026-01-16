@@ -2,17 +2,20 @@ import 'package:html_unescape/html_unescape.dart';
 
 class Sticker {
   final int id;
-  final String text;    // The Title (Hebrew Name)
-  final String content; // The Quote (Content/Meaning)
+  final String text;    // Hebrew Name
+  final String content; // Hebrew Quote
   final String imageUrl;
   final String postUrl;
   final DateTime? date;
 
-  // New Fields
+  // Extra metadata
   final String nameInEnglish;
   final String nameInHebrew;
   final String enQuote;
   final String heQuote;
+
+  // NEW: Local Path for offline access
+  final String? localImagePath;
 
   Sticker({
     required this.id,
@@ -25,6 +28,7 @@ class Sticker {
     this.nameInHebrew = '',
     this.enQuote = '',
     this.heQuote = '',
+    this.localImagePath,
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
@@ -127,18 +131,55 @@ class Sticker {
     // 4. Get Link
     String link = json['link'] ?? '';
 
+    String? localPath = json['localImagePath'];
+
     return Sticker(
-      id: json['id'] as int,
-      text: textContent,
-      content: quoteContent,
-      imageUrl: imgUrl,
-      postUrl: link,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      text: textContent,      // defined in your existing logic
+      content: quoteContent,  // defined in your existing logic
+      imageUrl: imgUrl,       // defined in your existing logic
+      postUrl: link,          // defined in your existing logic
       date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      // Pass new fields
-      nameInEnglish: nameEn,
-      nameInHebrew: nameHe,
-      enQuote: quoteEn,
-      heQuote: quoteHe,
+      nameInEnglish: nameEn,  // defined in your existing logic
+      nameInHebrew: nameHe,   // defined in your existing logic
+      enQuote: quoteEn,       // defined in your existing logic
+      heQuote: quoteHe,       // defined in your existing logic
+      localImagePath: localPath, // <--- NEW
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': {'rendered': text}, // mimic WP structure for consistency
+      'content': {'rendered': content},
+      'localImagePath': localImagePath,
+      'imageUrl': imageUrl, // keep original URL as backup
+      'link': postUrl,
+      'date': date?.toIso8601String(),
+      'meta': {
+        'name_in_english': nameInEnglish,
+        'name_in_hebrew': nameInHebrew,
+        'en_quote': enQuote,
+        'he_quote': heQuote,
+      }
+    };
+  }
+
+  // NEW: Helper to create a copy with a local path
+  Sticker copyWith({String? localImagePath}) {
+    return Sticker(
+      id: id,
+      text: text,
+      content: content,
+      imageUrl: imageUrl,
+      postUrl: postUrl,
+      date: date,
+      nameInEnglish: nameInEnglish,
+      nameInHebrew: nameInHebrew,
+      enQuote: enQuote,
+      heQuote: heQuote,
+      localImagePath: localImagePath ?? this.localImagePath,
     );
   }
 }

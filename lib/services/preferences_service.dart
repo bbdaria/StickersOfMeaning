@@ -1,8 +1,17 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/sticker.dart';
+
 
 class PreferencesService extends ChangeNotifier {
+  static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
+  // PreferencesService(this._prefs);
+
 
   // --- Keys ---
   static const _keyLanguage = 'app_language'; // 'en' or 'he'
@@ -106,5 +115,87 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> clearHistory() async {
     await _prefs.remove(_keySeenStickers);
+  }
+
+  // ---------------------------------------------------------
+  // POOL MANAGEMENT
+  // ---------------------------------------------------------
+
+  List<Sticker> getStickerPool() {
+    final String? jsonString = _prefs.getString(_poolKey);
+    if (jsonString == null) return [];
+
+    try {
+      final List<dynamic> decoded = jsonDecode(jsonString);
+      return decoded.map((e) => Sticker.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  bool isStickerInPool(int id) {
+    final pool = getStickerPool();
+    return pool.any((s) => s.id == id);
+  }
+
+  Future<void> addToPool(Sticker sticker) async {
+    final pool = getStickerPool();
+    if (pool.any((s) => s.id == sticker.id)) return; // Already in pool
+
+    // 1. Download and Save Image Locally
+    String? localPath;
+    if (sticker.imageUrl.isNotEmpty) {
+      try {
+        localPath = await _downloadAndSaveImage(sticker.imageUrl, sticker.id);
+      } catch (e) {
+        // If download fails, we still save the sticker, just without local image
+        print('Failed to download image for pool: $e');
+      }
+    }
+
+    // 2. Update Sticker object
+    final newSticker = sticker.copyWith(localImagePath: localPath);
+
+    // 3. Save to List
+    pool.add(newSticker);
+    await _savePoolList(pool);
+  }
+
+  Future<void> removeFromPool(int id) async {
+    final pool = getStickerPool();
+    final stickerToRemove = pool.firstWhere((s) => s.id == id, orElse: () => pool.first);
+
+    // 1. Remove local file if exists
+    if (stickerToRemove.localImagePath != null) {
+      final file = File(stickerToRemove.localImagePath!);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    // 2. Remove from list
+    pool.removeWhere((s) => s.id == id);
+    await _savePoolList(pool);
+  }
+
+  Future<void> _savePoolList(List<Sticker> pool) async {
+    final jsonList = pool.map((s) => s.toJson()).toList();
+    await _prefs.setString(_poolKey, jsonEncode(jsonList));
+  }
+
+  // Helper: Download Image
+  Future<String> _downloadAndSaveImage(String url, int id) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final extension = url.split('.').last;
+    final filePath = '${directory.path}/pool_$id.$extension';
+    final file = File(filePath);
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      await file.writeAsBytes(response.bodyBytes);
+      return filePath;
+    } else {
+      throw Exception('Failed to download image');
+    }
   }
 }

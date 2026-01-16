@@ -156,7 +156,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         // 1. The Quote (Content) - Hebrew/Primary
                         if (sticker.content.isNotEmpty) ...[
                           Text(
-                            '"${sticker.content}"',
+                            '${parse(sticker.content).body?.text ?? ''}',
                             style: const TextStyle(
                               fontSize: 18,
                               fontStyle: FontStyle.italic,
@@ -172,7 +172,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         if (sticker.enQuote.isNotEmpty &&
                             sticker.enQuote != sticker.content) ...[
                           Text(
-                            '"${sticker.enQuote}"',
+                            '${parse(sticker.enQuote).body?.text ?? ''}',
                             style: TextStyle(
                               fontSize: 16,
                               fontStyle: FontStyle.italic,
