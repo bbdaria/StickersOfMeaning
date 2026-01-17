@@ -211,10 +211,11 @@ class ApiService {
   //   return Sticker.fromJson(jsonDecode(response.body));
   // }
 
+  // --- UPDATED getDailySticker ---
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
       WidgetService widgetService, {
-        bool forceRefresh = false, // <--- NEW PARAMETER
+        bool forceRefresh = false,
       }) async {
     final now = DateTime.now();
     final todayString = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
@@ -222,7 +223,7 @@ class ApiService {
     final lastDate = prefs.dailyDate;
     final currentId = prefs.dailyStickerId;
 
-    // 1. Return cached sticker if valid and not forcing refresh
+    // 1. Return cached if valid and not forced
     if (!forceRefresh && lastDate == todayString && currentId != null) {
       if (prefs.isStickerInPool(currentId)) {
         return prefs.getStickerPool().firstWhere((s) => s.id == currentId);
@@ -236,20 +237,30 @@ class ApiService {
 
     // 2. Generate New Sticker
     Sticker newSticker;
+    final filterCategories = prefs.dailyFilterCategories;
 
-    // Check Preference
+    // A. POOL STRATEGY
     if (prefs.stickerSource == 'pool') {
-      final pool = prefs.getStickerPool();
+      List<Sticker> pool = prefs.getStickerPool();
+
+      // Filter by category if needed
+      if (filterCategories.isNotEmpty) {
+        pool = pool.where((s) {
+          // Check if sticker has ANY of the selected categories
+          return s.categories.any((c) => filterCategories.contains(c));
+        }).toList();
+      }
+
       if (pool.isNotEmpty) {
-        // Pick random from pool
         newSticker = pool[Random().nextInt(pool.length)];
       } else {
-        // Fallback to web
-        newSticker = await _fetchRandomFromWeb(prefs);
+        debugPrint('Pool empty (or no matches for filter), fallback to Web');
+        newSticker = await _fetchRandomFromWeb(prefs, filterCategories);
       }
-    } else {
-      // Web strategy
-      newSticker = await _fetchRandomFromWeb(prefs);
+    }
+    // B. WEB STRATEGY
+    else {
+      newSticker = await _fetchRandomFromWeb(prefs, filterCategories);
     }
 
     // 3. Save & Update
@@ -259,10 +270,33 @@ class ApiService {
     return newSticker;
   }
 
+  Future<List<int>> _fetchStickerIds({List<int>? categoryIds}) async {
+    final params = {
+      '_fields': 'id',
+      'per_page': '100', // Note: If >100 exist, we only get first page here.
+      // For a perfect random sample of thousands, we'd need pagination loop.
+      // But for now, 100 random candidates is sufficient entropy.
+      'status': 'publish',
+    };
 
-  Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs) async {
-    final allIds = await _fetchAllStickerIds();
-    if (allIds.isEmpty) throw Exception('No stickers found in database');
+    if (categoryIds != null && categoryIds.isNotEmpty) {
+      params['categories'] = categoryIds.join(',');
+    }
+
+    final uri = _buildUri(dbUrl, 'posts', params);
+    final response = await http.get(uri);
+
+    if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
+
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map<int>((e) => e['id'] as int).toList();
+  }
+
+  Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs, List<int> categoryIds) async {
+    // 1. Fetch ALL IDs that match the category criteria
+    final allIds = await _fetchStickerIds(categoryIds: categoryIds);
+
+    if (allIds.isEmpty) throw Exception('No stickers found matching criteria');
 
     final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
     List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();

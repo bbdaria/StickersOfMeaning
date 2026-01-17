@@ -15,6 +15,7 @@ class Sticker {
 
   // This field is crucial for the pool
   final String? localImagePath;
+  final List<int> categories;
 
   Sticker({
     required this.id,
@@ -28,6 +29,7 @@ class Sticker {
     this.enQuote = '',
     this.heQuote = '',
     this.localImagePath,
+    this.categories = const [], // Default empty
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
@@ -132,6 +134,11 @@ class Sticker {
       imgUrl = json['imageUrl'];
     }
 
+    List<int> cats = [];
+    if (json['categories'] != null && json['categories'] is List) {
+      cats = List<int>.from(json['categories']);
+    }
+
     // 5. Link
     String link = json['link'] ?? '';
 
@@ -150,7 +157,8 @@ class Sticker {
       nameInHebrew: nameHe,
       enQuote: quoteEn,
       heQuote: quoteHe,
-      localImagePath: localPath, // <--- IMPORTANT
+      localImagePath: localPath,
+      categories: cats
     );
   }
 
@@ -159,10 +167,11 @@ class Sticker {
       'id': id,
       'title': {'rendered': text},
       'content': {'rendered': content},
-      'localImagePath': localImagePath, // <--- IMPORTANT
+      'localImagePath': localImagePath,
       'imageUrl': imageUrl,
       'link': postUrl,
       'date': date?.toIso8601String(),
+      'categories': categories,
       'meta': {
         'name_in_english': nameInEnglish,
         'name_in_hebrew': nameInHebrew,
@@ -184,6 +193,7 @@ class Sticker {
       nameInHebrew: nameInHebrew,
       enQuote: enQuote,
       heQuote: heQuote,
+      categories: categories,
       localImagePath: localImagePath ?? this.localImagePath,
     );
   }

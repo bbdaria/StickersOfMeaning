@@ -17,6 +17,7 @@ class PreferencesService extends ChangeNotifier {
   static const _keyLanguage = 'app_language';
   static const _keyStickerSource = 'sticker_source';
   static const _keyStickerFilters = 'sticker_filters';
+  static const _keyDailyFilters = 'daily_sticker_filters';
   static const _keyWidgetFontSize = 'widget_font_size';
   static const _keyWidgetShowImage = 'widget_show_image';
 
@@ -29,6 +30,7 @@ class PreferencesService extends ChangeNotifier {
   String _language = 'en';
   String _stickerSource = 'web';
   List<String> _stickerFilters = [];
+  List<int> _dailyFilterCategories = [];
   double _widgetFontSize = 16.0;
   bool _widgetShowImage = true;
 
@@ -37,13 +39,17 @@ class PreferencesService extends ChangeNotifier {
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
 
-    // Get directory once
     final dir = await getApplicationDocumentsDirectory();
     _appPath = dir.path;
 
     _language = _prefs.getString(_keyLanguage) ?? 'en';
     _stickerSource = _prefs.getString(_keyStickerSource) ?? 'web';
     _stickerFilters = _prefs.getStringList(_keyStickerFilters) ?? [];
+
+    // Load Daily Filters
+    final dailyFilterList = _prefs.getStringList(_keyDailyFilters) ?? [];
+    _dailyFilterCategories = dailyFilterList.map((e) => int.tryParse(e) ?? 0).where((e) => e != 0).toList();
+
     _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
@@ -90,6 +96,7 @@ class PreferencesService extends ChangeNotifier {
 
   String? get dailyDate => _prefs.getString(_keyDailyDate);
   int? get dailyStickerId => _prefs.getInt(_keyDailyStickerId);
+  List<int> get dailyFilterCategories => _dailyFilterCategories;
   List<String> get seenStickerIds => _prefs.getStringList(_keySeenStickers) ?? [];
 
   // --- Setters ---
@@ -136,6 +143,12 @@ class PreferencesService extends ChangeNotifier {
       history.add(id.toString());
       await _prefs.setStringList(_keySeenStickers, history);
     }
+    notifyListeners();
+  }
+
+  Future<void> setDailyFilterCategories(List<int> ids) async {
+    _dailyFilterCategories = ids;
+    await _prefs.setStringList(_keyDailyFilters, ids.map((e) => e.toString()).toList());
     notifyListeners();
   }
 
