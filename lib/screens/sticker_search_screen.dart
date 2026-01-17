@@ -125,46 +125,64 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   void _showStickerDetails(Sticker sticker) {
+    // 1. Get current language preference
+    final language = context.read<PreferencesService>().language;
+    final isEnglish = language == 'en';
+
+    // 2. Prepare Data based on Language
+    // We use fallbacks so the dialog isn't empty if a translation is missing
+    String displayQuote = isEnglish
+        ? (sticker.enQuote.isNotEmpty ? sticker.enQuote : sticker.content)
+        : sticker.content;
+
+    String displayName = isEnglish
+        ? (sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.text)
+        : sticker.text;
+
+    // Clean HTML tags from the quote just in case
+    displayQuote = parse(displayQuote).body?.text ?? displayQuote;
+
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Shrink to fit content
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Top Section: Image + Close Button (Stack)
+            // --- Image Section (Unchanged) ---
             Stack(
               children: [
-                // The Image
                 if (sticker.imageUrl.isNotEmpty)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 200, // Fixed height for consistency
-                    child: Image.network(
-                      sticker.imageUrl,
-                      fit: BoxFit.contain, // Contain keeps the whole image visible
-                      errorBuilder: (_, __, ___) =>
-                          Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 200,
+                      child: Image.network(
+                        sticker.imageUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+                      ),
                     ),
                   )
                 else
                   Container(
                     height: 60,
+                    margin: const EdgeInsets.only(top: 24.0),
                     color: const Color(0xFFF5F7FA),
                     child: const Center(child: Icon(Icons.sticky_note_2, size: 30, color: Colors.grey)),
                   ),
-
-                // The "X" Close Button (Top Right)
                 Positioned(
                   top: 8,
                   right: 8,
                   child: CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.4),
+                    backgroundColor: Colors.black.withOpacity(0.1),
                     radius: 16,
                     child: IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: Colors.white),
+                      icon: const Icon(Icons.close, size: 18, color: Colors.black54),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () => Navigator.pop(ctx),
@@ -174,66 +192,43 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               ],
             ),
 
-            // 2. Middle Section: Scrollable Text Content
+            // --- Text Section (Dynamic Language) ---
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
-                    // Hebrew Quote
-                    if (sticker.content.isNotEmpty) ...[
+                    // 1. The Quote
+                    if (displayQuote.isNotEmpty) ...[
                       Text(
-                        parse(sticker.content).body?.text ?? '',
+                        '"$displayQuote"',
                         style: const TextStyle(
                           fontSize: 18,
                           fontStyle: FontStyle.italic,
                           color: Colors.black87,
                         ),
                         textAlign: TextAlign.center,
-                        textDirection: TextDirection.rtl,
+                        // RTL for Hebrew, LTR for English
+                        textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
                       ),
                       const SizedBox(height: 12),
                     ],
 
-                    // English Quote
-                    if (sticker.enQuote.isNotEmpty && sticker.enQuote != sticker.content) ...[
-                      Text(
-                        parse(sticker.enQuote).body?.text ?? '',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[700],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Names
+                    // 2. The Name
                     Text(
-                      sticker.text,
+                      displayName,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E3A8A), // App Blue
+                        color: Color(0xFF1E3A8A),
                       ),
                       textAlign: TextAlign.center,
+                      textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
                     ),
-                    if (sticker.nameInEnglish.isNotEmpty)
-                      Text(
-                        sticker.nameInEnglish,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF3B82C4),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
                   ],
                 ),
               ),
             ),
-
             // 3. Bottom Section: Buttons Side-by-Side
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
