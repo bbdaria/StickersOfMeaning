@@ -260,7 +260,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Saved sticker to your pool!'),
+                            content: Text('Sticker saved to collection'),
                             duration: const Duration(seconds: 750),
                             action: SnackBarAction(
                               label: 'View',
@@ -411,10 +411,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ExpansionTile(
                   title: const Text("Filters (Topics & Options)"),
                   children: [
-                    // --- FIX IS APPLIED HERE ---
                     ConstrainedBox(
-                      // Limit the height of the expanded area to 300 pixels
-                      // This prevents it from taking up the entire screen and overflowing
                       constraints: const BoxConstraints(maxHeight: 300),
                       child: SingleChildScrollView(
                         child: Padding(
@@ -487,6 +484,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   Widget _buildResults() {
+    // 1. Get Current Language from Provider
+    final prefs = Provider.of<PreferencesService>(context);
+    final isEnglish = prefs.language == 'en';
+
     if (_futureResults == null) {
       return const Center(child: Text(''));
     }
@@ -512,6 +513,29 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
           separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (context, index) {
             final sticker = results[index];
+
+            // 2. Determine Display Name (Title)
+            String displayName;
+            if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
+              displayName = sticker.nameInEnglish;
+            } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
+              displayName = sticker.nameInHebrew;
+            } else {
+              // Fallback to the default "text" (Usually Hebrew Title)
+              displayName = sticker.text;
+            }
+
+            // 3. Determine Display Quote (Subtitle)
+            String displayQuote;
+            if (isEnglish && sticker.enQuote.isNotEmpty) {
+              displayQuote = sticker.enQuote;
+            } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
+              displayQuote = sticker.heQuote;
+            } else {
+              // Fallback to the default "content" (Usually Hebrew Quote)
+              displayQuote = sticker.content;
+            }
+
             return ListTile(
               leading: sticker.imageUrl.isNotEmpty
                   ? ClipRRect(
@@ -524,16 +548,20 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               )
                   : const Icon(Icons.sticky_note_2),
 
-              // PRIMARY TITLE (Hebrew)
+              // Title: The Person's Name
               title: Text(
-                  parse(sticker.heQuote).body?.text ?? '',
-                  textDirection: TextDirection.rtl
+                displayName,
+                textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
 
-              // SUBTITLE (English Name)
-              subtitle: sticker.nameInHebrew.isNotEmpty
-                  ? Text(sticker.nameInHebrew)
-                  : null,
+              // Subtitle: The Quote
+              subtitle: Text(
+                parse(displayQuote).body?.text ?? '',
+                textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
 
               onTap: () {
                 _showStickerDetails(sticker);
