@@ -36,24 +36,24 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
     }
   }
 
-  Future<void> _performAutoRefresh() async {
+  // --- NEW: Updates ONLY the widget, not the Home Screen ---
+  Future<void> _updateWidgetOnly() async {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Refreshing daily sticker...'),
+        content: Text('Updating widget...'),
         duration: Duration(seconds: 1),
       ),
     );
 
     try {
-      await context.read<ApiService>().getDailySticker(
+      await context.read<ApiService>().updateWidgetContent(
         context.read<PreferencesService>(),
         context.read<WidgetService>(),
-        forceRefresh: true,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Updated successfully!')),
+          const SnackBar(content: Text('Widget updated!')),
         );
       }
     } catch (e) {
@@ -68,7 +68,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily Sticker Settings')),
+      appBar: AppBar(title: const Text('Widget selection preferences')),
       body: Consumer<PreferencesService>(
         builder: (context, prefs, child) {
           final pool = prefs.getStickerPool();
@@ -76,27 +76,26 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
           final currentFilters = prefs.dailyFilterCategories;
           final isPoolSource = prefs.stickerSource == 'pool';
 
-          // --- LOGIC: Determine which categories to show ---
           Set<int> validCategoryIds;
-
           if (isPoolSource) {
-            // Only show categories that exist in the saved pool
             validCategoryIds = pool.expand((sticker) => sticker.categories).toSet();
           } else {
-            // Show all categories available on the web
             validCategoryIds = _allWebCategories.keys.toSet();
           }
-          // -------------------------------------------------
 
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              // --- SOURCE SECTION ---
               const Text(
-                'Source',
+                'Widget Source',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
+              const Text(
+                'Where should the home screen widget get its sticker from?',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
               SegmentedButton<String>(
                 segments: const [
                   ButtonSegment(
@@ -106,7 +105,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   ),
                   ButtonSegment(
                     value: 'pool',
-                    label: Text('My Pool'),
+                    label: Text('My Collection'),
                     icon: Icon(Icons.collections_bookmark),
                   ),
                 ],
@@ -114,12 +113,9 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                 onSelectionChanged: (Set<String> newSelection) async {
                   final newValue = newSelection.first;
                   if (newValue != prefs.stickerSource) {
-                    // Clear filters when switching sources to avoid confusion
-                    // (e.g. filtering for "Hope" when pool has no "Hope" stickers)
                     await prefs.setDailyFilterCategories([]);
-
                     await prefs.setStickerSource(newValue);
-                    _performAutoRefresh();
+                    _updateWidgetOnly(); // Trigger widget update
                   }
                 },
                 style: ButtonStyle(
@@ -143,7 +139,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your pool is empty! We will use the Web until you add some stickers.',
+                          'Your collection is empty! The sticker will be taken from the Web until you add some stickers.',
                           style: TextStyle(color: Colors.orange[800], fontSize: 13),
                         ),
                       ),
@@ -153,26 +149,22 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
 
               const SizedBox(height: 32),
 
-              // --- FILTER SECTION ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Filter by Category',
+                    'Filter Stickers by Meaning',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   if (currentFilters.isNotEmpty)
                     TextButton(
-                      onPressed: () => prefs.setDailyFilterCategories([]),
+                      onPressed: () async {
+                        await prefs.setDailyFilterCategories([]);
+                        _updateWidgetOnly();
+                      },
                       child: const Text('Clear All'),
                     ),
                 ],
-              ),
-              Text(
-                isPoolSource
-                    ? 'Only show from these groups in your pool:'
-                    : 'Only show from these groups on the web:',
-                style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 12),
 
@@ -184,7 +176,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   child: Center(
                     child: Text(
                       isPoolSource
-                          ? 'No categorized stickers in your pool yet.'
+                          ? 'No categorized stickers in your collection.'
                           : 'No categories available.',
                       style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                     ),
@@ -195,7 +187,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   spacing: 8,
                   runSpacing: 0,
                   children: _allWebCategories.entries
-                      .where((entry) => validCategoryIds.contains(entry.key)) // Filter Check
+                      .where((entry) => validCategoryIds.contains(entry.key))
                       .map((entry) {
                     final isSelected = currentFilters.contains(entry.key);
                     return FilterChip(
@@ -203,14 +195,15 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                       selected: isSelected,
                       selectedColor: const Color(0xFF1E3A8A).withOpacity(0.2),
                       checkmarkColor: const Color(0xFF1E3A8A),
-                      onSelected: (bool selected) {
+                      onSelected: (bool selected) async {
                         List<int> newFilters = List.from(currentFilters);
                         if (selected) {
                           newFilters.add(entry.key);
                         } else {
                           newFilters.remove(entry.key);
                         }
-                        prefs.setDailyFilterCategories(newFilters);
+                        await prefs.setDailyFilterCategories(newFilters);
+                        _updateWidgetOnly(); // Trigger widget update
                       },
                     );
                   }).toList(),
@@ -220,15 +213,14 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               const Divider(),
               const SizedBox(height: 24),
 
-              // --- ACTIONS ---
               ListTile(
-                title: const Text('Force Update Today\'s Sticker'),
+                title: const Text('Refresh widget'),
                 leading: const Icon(Icons.refresh, color: Color(0xFF1E3A8A)),
                 shape: RoundedRectangleBorder(
                   side: BorderSide(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                onTap: _performAutoRefresh,
+                onTap: _updateWidgetOnly,
               ),
             ],
           );

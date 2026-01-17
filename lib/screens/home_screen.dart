@@ -566,12 +566,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               tooltip: isSaved ? 'Remove from Pool' : 'Save to Pool',
                               onPressed: () async {
                                 if (isSaved) {
-                                  await prefs.removeFromPool(sticker.id);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Removed from pool'), duration: Duration(seconds: 1)),
-                                    );
-                                  }
+                                  // --- UPDATED: Use Safe Remove ---
+                                  await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
+                                  // --------------------------------
                                 } else {
                                   await prefs.addToPool(sticker);
                                   if (context.mounted) {

@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/material.dart'; // Ensure Material is imported for BuildContext/SnackBar
+import 'package:provider/provider.dart'; // Ensure Provider is imported
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:html_unescape/html_unescape.dart';
 import '../models/sticker.dart';
 import 'preferences_service.dart';
 import 'widget_service.dart';
-import 'package:html_unescape/html_unescape.dart';
 
 class StickerIndexItem {
   final int id;
   final String hebrewName;
   final String englishName;
-  // FIX 1: Add this field to store the category IDs
   final List<int> categoryIds;
 
   StickerIndexItem({
@@ -23,32 +24,23 @@ class StickerIndexItem {
 
   factory StickerIndexItem.fromJson(Map<String, dynamic> json) {
     var unescape = HtmlUnescape();
-
     String heName = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
       heName = unescape.convert(json['title']['rendered'].toString());
     }
-
     String enName = '';
     if (json['meta'] != null && json['meta']['name_in_english'] != null) {
       enName = unescape.convert(json['meta']['name_in_english'].toString());
     }
-
-    // FIX 2: Safely parse categories.
-    // If the API sends null (which happens if '_fields' is missing), we use []
     List<int> cats = [];
-
-    // 2. Check if key exists and is actually a list
     if (json['categories'] != null && json['categories'] is List) {
-      // 3. Convert safely
       cats = List<int>.from(json['categories']);
     }
-
     return StickerIndexItem(
       id: json['id'],
       hebrewName: heName,
       englishName: enName,
-      categoryIds: cats, // Pass the safe list
+      categoryIds: cats,
     );
   }
 }
@@ -62,9 +54,7 @@ class ApiService {
   Uri _buildUri(String rootUrl, String path, [Map<String, dynamic>? query]) {
     String cleanRoot = rootUrl.endsWith('/') ? rootUrl : '$rootUrl/';
     String cleanPath = path.startsWith('/') ? path.substring(1) : path;
-
     final uri = Uri.parse('$cleanRoot$cleanPath');
-
     if (query != null && query.isNotEmpty) {
       final queryParams = <String, dynamic>{};
       query.forEach((key, value) {
@@ -76,16 +66,16 @@ class ApiService {
       });
       return uri.replace(queryParameters: queryParams);
     }
-
     return uri;
   }
+
+  // --- CORE SEARCH & FETCH METHODS ---
 
   Future<void> fetchStickerIndex({
     required Function(List<StickerIndexItem>) onBatchLoaded,
   }) async {
     int page = 1;
     bool hasMore = true;
-
     while (hasMore) {
       final uri = _buildUri(dbUrl, 'posts', {
         'per_page': '100',
@@ -93,7 +83,6 @@ class ApiService {
         'status': 'publish',
         '_fields': 'id,title,meta,categories',
       });
-
       try {
         final response = await http.get(uri);
         if (response.statusCode == 200) {
@@ -109,7 +98,6 @@ class ApiService {
           hasMore = false;
         }
       } catch (e) {
-        debugPrint('Error fetching index page $page: $e');
         hasMore = false;
       }
     }
@@ -144,74 +132,24 @@ class ApiService {
     List<int>? categoryIds,
     List<String>? searchIn,
   }) async {
-    var english = RegExp(r'[a-zA-Z]');
     var searchKey = 'search';
-    if (query.isNotEmpty && english.hasMatch(query.split(' ')[0])){
-      searchKey += '_en';
-    }
-
     final Map<String, dynamic> params = {
       '_embed': 'true',
       'per_page': '20',
       'status': 'publish',
       if(query.isNotEmpty) searchKey: query,
     };
-
-    if (query.trim().isNotEmpty) {
-      params[searchKey] = query.trim();
-    }
-
     if (categoryIds != null && categoryIds.isNotEmpty) {
       params['categories'] = categoryIds.join(',');
     }
-
-    if (searchIn != null && searchIn.isNotEmpty) {
-      params['search_columns'] = searchIn;
-    }
-
     final uri = _buildUri(dbUrl, 'posts', params);
-
     final response = await http.get(uri);
-    if (response.statusCode != 200) {
-      throw Exception('Failed to search: ${response.statusCode}');
-    }
-
+    if (response.statusCode != 200) throw Exception('Failed to search');
     final List<dynamic> data = jsonDecode(response.body);
     return data.map((e) => Sticker.fromJson(e)).toList();
   }
 
-  Future<Sticker> fetchTodaysSticker() async {
-    final uri = _buildUri(baseUrl, 'posts', {'per_page': '1', '_embed': 'true'});
-    final response = await http.get(uri);
-    if (response.statusCode != 200) throw Exception('Error');
-    final List<dynamic> data = jsonDecode(response.body);
-    if (data.isEmpty) throw Exception('Empty');
-    return Sticker.fromJson(data[0]);
-  }
-
-  // Future<List<int>> _fetchAllStickerIds() async {
-  //   final uri = _buildUri(dbUrl, 'posts', {
-  //     '_fields': 'id',
-  //     'per_page': '100',
-  //     'status': 'publish',
-  //   });
-  //
-  //   final response = await http.get(uri);
-  //   if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
-  //
-  //   final List<dynamic> data = jsonDecode(response.body);
-  //   return data.map<int>((e) => e['id'] as int).toList();
-  // }
-
-  // Future<Sticker> _fetchStickerById(int id) async {
-  //   final uri = _buildUri(dbUrl, 'posts/$id', {'_embed': 'true'});
-  //   final response = await http.get(uri);
-  //   if (response.statusCode != 200) throw Exception('Failed to fetch sticker details');
-  //
-  //   return Sticker.fromJson(jsonDecode(response.body));
-  // }
-
-  // --- UPDATED getDailySticker ---
+  // --- HOME SCREEN LOGIC (Always Random Web) ---
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
       WidgetService widgetService, {
@@ -223,86 +161,96 @@ class ApiService {
     final lastDate = prefs.dailyDate;
     final currentId = prefs.dailyStickerId;
 
-    // 1. Return cached if valid and not forced
+    Sticker homeSticker;
+    bool shouldUpdateWidget = false; // <--- Logic Flag
+
+    // 1. Try to load cached "Home" sticker
     if (!forceRefresh && lastDate == todayString && currentId != null) {
-      if (prefs.isStickerInPool(currentId)) {
-        return prefs.getStickerPool().firstWhere((s) => s.id == currentId);
-      }
       try {
-        return await _fetchStickerById(currentId);
+        if (prefs.isStickerInPool(currentId)) {
+          homeSticker = prefs.getStickerPool().firstWhere((s) => s.id == currentId);
+        } else {
+          homeSticker = await _fetchStickerById(currentId);
+        }
+        // CACHE HIT: We loaded today's existing sticker.
+        // We do NOT update the widget, preserving whatever the user manually sent there.
       } catch (e) {
-        debugPrint('Error fetching saved daily sticker: $e');
+        debugPrint('Error fetching cached home sticker, fetching new: $e');
+        // Cache failed, forced to fetch new
+        homeSticker = await _fetchRandomFromWeb(prefs, null);
+        await prefs.setDailySticker(homeSticker.id, todayString);
+        shouldUpdateWidget = true; // New data implies we should sync the widget
       }
+    } else {
+      // 2. Fetch NEW Random Web Sticker (New Day or Force Refresh)
+      homeSticker = await _fetchRandomFromWeb(prefs, null);
+      await prefs.setDailySticker(homeSticker.id, todayString);
+      shouldUpdateWidget = true; // New Day = Update Widget
     }
 
-    // 2. Generate New Sticker
-    Sticker newSticker;
-    final filterCategories = prefs.dailyFilterCategories;
+    // 3. Update Widget (Conditional)
+    if (shouldUpdateWidget) {
+      await updateWidgetContent(prefs, widgetService, candidateSticker: homeSticker);
+    }
 
-    // A. POOL STRATEGY
-    if (prefs.stickerSource == 'pool') {
-      List<Sticker> pool = prefs.getStickerPool();
+    return homeSticker;
+  }
 
-      // Filter by category if needed
-      if (filterCategories.isNotEmpty) {
-        pool = pool.where((s) {
-          // Check if sticker has ANY of the selected categories
-          return s.categories.any((c) => filterCategories.contains(c));
-        }).toList();
-      }
+  // --- WIDGET LOGIC (Respects Settings) ---
+  Future<void> updateWidgetContent(
+      PreferencesService prefs,
+      WidgetService widgetService,
+      {Sticker? candidateSticker}
+      ) async {
+    Sticker widgetSticker;
+    final filters = prefs.dailyFilterCategories;
 
-      if (pool.isNotEmpty) {
-        newSticker = pool[Random().nextInt(pool.length)];
+    try {
+      if (prefs.stickerSource == 'pool') {
+        // --- POOL STRATEGY ---
+        List<Sticker> pool = prefs.getStickerPool();
+        if (filters.isNotEmpty) {
+          pool = pool.where((s) => s.categories.any((c) => filters.contains(c))).toList();
+        }
+
+        if (pool.isNotEmpty) {
+          widgetSticker = pool[Random().nextInt(pool.length)];
+        } else {
+          // Fallback if pool empty or no matches
+          widgetSticker = await _fetchRandomFromWeb(prefs, filters);
+        }
       } else {
-        debugPrint('Pool empty (or no matches for filter), fallback to Web');
-        newSticker = await _fetchRandomFromWeb(prefs, filterCategories);
+        // --- WEB STRATEGY ---
+        if (filters.isNotEmpty) {
+          // Must fetch specific filtered sticker from web
+          widgetSticker = await _fetchRandomFromWeb(prefs, filters);
+        } else {
+          // No filters = Pure Random.
+          // If we have a candidate (from Home load), use it to keep Home & Widget in sync by default.
+          widgetSticker = candidateSticker ?? await _fetchRandomFromWeb(prefs, null);
+        }
       }
+      await prefs.setWidgetStickerId(widgetSticker.id);
+      await widgetService.updateStickerWidget(widgetSticker);
+    } catch (e) {
+      debugPrint('Failed to update widget content: $e');
     }
-    // B. WEB STRATEGY
-    else {
-      newSticker = await _fetchRandomFromWeb(prefs, filterCategories);
-    }
-
-    // 3. Save & Update
-    await prefs.setDailySticker(newSticker.id, todayString);
-    await widgetService.updateStickerWidget(newSticker);
-
-    return newSticker;
   }
 
-  Future<List<int>> _fetchStickerIds({List<int>? categoryIds}) async {
-    final params = {
-      '_fields': 'id',
-      'per_page': '100', // Note: If >100 exist, we only get first page here.
-      // For a perfect random sample of thousands, we'd need pagination loop.
-      // But for now, 100 random candidates is sufficient entropy.
-      'status': 'publish',
-    };
-
-    if (categoryIds != null && categoryIds.isNotEmpty) {
-      params['categories'] = categoryIds.join(',');
-    }
-
-    final uri = _buildUri(dbUrl, 'posts', params);
-    final response = await http.get(uri);
-
-    if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
-
-    final List<dynamic> data = jsonDecode(response.body);
-    return data.map<int>((e) => e['id'] as int).toList();
-  }
-
-  Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs, List<int> categoryIds) async {
-    // 1. Fetch ALL IDs that match the category criteria
+  // Helper
+  Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs, List<int>? categoryIds) async {
     final allIds = await _fetchStickerIds(categoryIds: categoryIds);
-
-    if (allIds.isEmpty) throw Exception('No stickers found matching criteria');
+    if (allIds.isEmpty) throw Exception('No stickers found');
 
     final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
     List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
 
     if (availableIds.isEmpty) {
-      await prefs.clearHistory();
+      // Don't clear history if we are just filtering for one category,
+      // only clear if we are out of global options.
+      if (categoryIds == null || categoryIds.isEmpty) {
+        await prefs.clearHistory();
+      }
       availableIds = allIds;
     }
 
@@ -310,13 +258,17 @@ class ApiService {
     return await _fetchStickerById(randomId);
   }
 
-  // ... (Ensure _fetchAllStickerIds and _fetchStickerById are present in the class) ...
-  Future<List<int>> _fetchAllStickerIds() async {
-    final uri = _buildUri(dbUrl, 'posts', {
+  Future<List<int>> _fetchStickerIds({List<int>? categoryIds}) async {
+    final params = {
       '_fields': 'id',
       'per_page': '100',
       'status': 'publish',
-    });
+    };
+    if (categoryIds != null && categoryIds.isNotEmpty) {
+      params['categories'] = categoryIds.join(',');
+    }
+
+    final uri = _buildUri(dbUrl, 'posts', params);
     final response = await http.get(uri);
     if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
     final List<dynamic> data = jsonDecode(response.body);
@@ -330,24 +282,52 @@ class ApiService {
     return Sticker.fromJson(jsonDecode(response.body));
   }
 
+  Future<void> safeRemoveFromPool(BuildContext context, int id) async {
+    final prefs = context.read<PreferencesService>();
+    final widgetService = context.read<WidgetService>();
 
-  // Helper for the original Web Logic
-  // Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs) async {
-  //   final allIds = await _fetchAllStickerIds();
-  //   if (allIds.isEmpty) throw Exception('No stickers found in database');
-  //
-  //   final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
-  //
-  //   // Filter out seen ones
-  //   List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
-  //
-  //   // Reset history if all seen
-  //   if (availableIds.isEmpty) {
-  //     await prefs.clearHistory();
-  //     availableIds = allIds;
-  //   }
-  //
-  //   final randomId = availableIds[Random().nextInt(availableIds.length)];
-  //   return await _fetchStickerById(randomId);
-  // }
+    // 1. Check if the sticker being removed is the one currently on the widget
+    final isWidgetTarget = (id == prefs.widgetStickerId);
+    final isPoolMode = (prefs.stickerSource == 'pool');
+
+    // 2. Perform the actual removal
+    await prefs.removeFromPool(id);
+
+    // 3. Handle Edge Cases
+    if (isWidgetTarget && isPoolMode) {
+      if (prefs.getStickerPool().isEmpty) {
+        // Case: Pool is now empty -> Switch to Web & Refresh
+        await prefs.setStickerSource('web');
+        await updateWidgetContent(prefs, widgetService);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Collection empty. Switched widget to Web source.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        // Case: Pool has other items -> Just refresh widget to a new one
+        await updateWidgetContent(prefs, widgetService);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed. Widget updated with new sticker.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } else {
+      // Standard removal (not affecting widget)
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from pool'), duration: Duration(seconds: 1)),
+        );
+      }
+    }
+  }
 }

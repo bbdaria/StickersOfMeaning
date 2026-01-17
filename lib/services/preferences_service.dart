@@ -253,4 +253,14 @@ class PreferencesService extends ChangeNotifier {
       throw Exception('Failed to download image');
     }
   }
+
+  static const _keyWidgetStickerId = 'current_widget_sticker_id';
+
+  // 2. Add the Getter
+  int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
+
+  // 3. Add the Setter
+  Future<void> setWidgetStickerId(int id) async {
+    await _prefs.setInt(_keyWidgetStickerId, id);
+  }
 }
