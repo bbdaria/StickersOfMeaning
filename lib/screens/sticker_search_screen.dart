@@ -91,35 +91,35 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
     setState(() {
       final matchingIds = _searchIndex.where((item) {
-        bool matches = false;
 
-        // Check English Name
-        if (item.englishName.toLowerCase().contains(query)) matches = true;
-        // Check Hebrew Name
-        if (item.hebrewName.toLowerCase().contains(query)) matches = true;
+        // 1. Category Logic
+        // If a category is selected, the item MUST have it.
+        if (_selectedCategories.isNotEmpty) {
+          // Safety check: ensure categoryIds is not null (it shouldn't be with new model)
+          if (item.categoryIds.isEmpty) return false;
 
-        return matches;
+          bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
+          if (!hasCategory) return false;
+        }
+
+        // 2. Name Logic
+        // If query is typed, it must match the name.
+        if (query.isNotEmpty) {
+          bool nameMatch =
+              item.hebrewName.toLowerCase().contains(query) ||
+                  item.englishName.toLowerCase().contains(query);
+          if (!nameMatch) return false;
+        }
+
+        return true;
       }).map((item) => item.id).toList();
 
-      // 2. CALL API (The "Use API as expected" part)
-      // If we found local matches, ask API for those specific IDs.
-      // If we found NO local matches (maybe user searched for content/quote?),
-      // we fall back to the standard API search.
-
+      // 3. Fetch Data
       final api = context.read<ApiService>();
-
-      if (matchingIds.isNotEmpty) {
-        // Option A: We found names! Fetch these specific stickers.
-        _futureResults = api.getStickersByIds(matchingIds);
-        debugPrint('Found local matches!');
+      if (matchingIds.isEmpty) {
+        _futureResults = Future.value([]);
       } else {
-        // Option B: No name match. Maybe they searched a Quote?
-        // Fallback to standard server-side search.
-        debugPrint('Did not find local matches...');
-        _futureResults = api.searchStickers(
-          query: query,
-          categoryIds: _selectedCategories.toList(),
-        );
+        _futureResults = api.getStickersByIds(matchingIds.take(100).toList());
       }
     });
   }
@@ -420,26 +420,26 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Search in:", style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  _buildGradientChip(
-                                      "Name (Title)", _searchInTitle, () =>
-                                      setState(() =>
-                                      _searchInTitle = !_searchInTitle)),
-                                  const SizedBox(width: 8),
-                                  _buildGradientChip("Meaning (Content)",
-                                      _searchInContent, () =>
-                                          setState(() =>
-                                          _searchInContent = !_searchInContent)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Text("Topics:", style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
+                              // const Text("Search in:", style: TextStyle(
+                              //     fontWeight: FontWeight.bold)),
+                              // const SizedBox(height: 8),
+                              // Row(
+                              //   children: [
+                              //     _buildGradientChip(
+                              //         "Name (Title)", _searchInTitle, () =>
+                              //         setState(() =>
+                              //         _searchInTitle = !_searchInTitle)),
+                              //     const SizedBox(width: 8),
+                              //     _buildGradientChip("Meaning (Content)",
+                              //         _searchInContent, () =>
+                              //             setState(() =>
+                              //             _searchInContent = !_searchInContent)),
+                              //   ],
+                              // ),
+                              // const SizedBox(height: 16),
+                              // const Text("Topics:", style: TextStyle(
+                              //     fontWeight: FontWeight.bold)),
+                              // const SizedBox(height: 8),
                               _availableCategories.isEmpty
                                   ? const Text("Loading topics...")
                                   : Wrap(
@@ -485,6 +485,9 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   Widget _buildResults() {
+    final prefs = Provider.of<PreferencesService>(context);
+    final isEnglish = prefs.language == 'en';
+
     if (_futureResults == null) {
       return const Center(child: Text(''));
     }
@@ -510,13 +513,35 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
           separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (context, index) {
             final sticker = results[index];
+            String displayName;
+
+            if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
+              displayName = sticker.nameInEnglish;
+            } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
+              displayName = sticker.nameInHebrew;
+            } else {
+              // Fallback to the default "text" (Usually Hebrew Title)
+              displayName = sticker.text;
+            }
+
+            // 3. Determine Display Quote (Subtitle)
+            String displayQuote;
+            if (isEnglish && sticker.enQuote.isNotEmpty) {
+              displayQuote = sticker.enQuote;
+            } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
+              displayQuote = sticker.heQuote;
+            } else {
+              // Fallback to the default "content" (Usually Hebrew Quote)
+              displayQuote = sticker.content;
+            }
+
             return ListTile(
               leading: sticker.imageUrl.isNotEmpty
                   ? ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: Image.network(
                   sticker.imageUrl,
-                  width: 50, height: 50, fit: BoxFit.cover,
+                  width: 50, height: 50, fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const Icon(Icons.image),
                 ),
               )
@@ -524,15 +549,18 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
               // PRIMARY TITLE (Hebrew)
               title: Text(
-                  parse(sticker.heQuote).body?.text ?? '',
-                  textDirection: TextDirection.rtl
+                displayName,
+                textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
 
               // SUBTITLE (English Name)
-              subtitle: sticker.nameInHebrew.isNotEmpty
-                  ? Text(sticker.nameInHebrew)
-                  : null,
-
+              subtitle: Text(
+                  parse(displayQuote).body?.text ?? '',
+                  textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis
+              ),
               onTap: () {
                 _showStickerDetails(sticker);
               },
