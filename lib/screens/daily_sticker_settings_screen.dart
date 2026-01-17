@@ -13,7 +13,7 @@ class DailyStickerSettingsScreen extends StatefulWidget {
 }
 
 class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen> {
-  Map<int, String> _availableCategories = {};
+  Map<int, String> _allWebCategories = {};
   bool _isLoadingCats = true;
 
   @override
@@ -27,7 +27,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
       final cats = await context.read<ApiService>().fetchCategories();
       if (mounted) {
         setState(() {
-          _availableCategories = cats;
+          _allWebCategories = cats;
           _isLoadingCats = false;
         });
       }
@@ -37,8 +37,6 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
   }
 
   Future<void> _performAutoRefresh() async {
-    // Show a mini loading indicator or just do it in background?
-    // User requested "Auto refresh", so a visual feedback is good.
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -73,8 +71,22 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
       appBar: AppBar(title: const Text('Daily Sticker Settings')),
       body: Consumer<PreferencesService>(
         builder: (context, prefs, child) {
-          final poolSize = prefs.getStickerPool().length;
+          final pool = prefs.getStickerPool();
+          final poolSize = pool.length;
           final currentFilters = prefs.dailyFilterCategories;
+          final isPoolSource = prefs.stickerSource == 'pool';
+
+          // --- LOGIC: Determine which categories to show ---
+          Set<int> validCategoryIds;
+
+          if (isPoolSource) {
+            // Only show categories that exist in the saved pool
+            validCategoryIds = pool.expand((sticker) => sticker.categories).toSet();
+          } else {
+            // Show all categories available on the web
+            validCategoryIds = _allWebCategories.keys.toSet();
+          }
+          // -------------------------------------------------
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -102,8 +114,11 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                 onSelectionChanged: (Set<String> newSelection) async {
                   final newValue = newSelection.first;
                   if (newValue != prefs.stickerSource) {
+                    // Clear filters when switching sources to avoid confusion
+                    // (e.g. filtering for "Hope" when pool has no "Hope" stickers)
+                    await prefs.setDailyFilterCategories([]);
+
                     await prefs.setStickerSource(newValue);
-                    // --- AUTO REFRESH TRIGGER ---
                     _performAutoRefresh();
                   }
                 },
@@ -113,7 +128,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                 ),
               ),
 
-              if (prefs.stickerSource == 'pool' && poolSize == 0)
+              if (isPoolSource && poolSize == 0)
                 Container(
                   margin: const EdgeInsets.only(top: 12),
                   padding: const EdgeInsets.all(12),
@@ -153,21 +168,35 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                     ),
                 ],
               ),
-              const Text(
-                'Only show stickers from these categories (Web or Pool). Leave empty for all.',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+              Text(
+                isPoolSource
+                    ? 'Only show from these groups in your pool:'
+                    : 'Only show from these groups on the web:',
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 12),
 
               if (_isLoadingCats)
                 const Center(child: CircularProgressIndicator())
-              else if (_availableCategories.isEmpty)
-                const Text('Unable to load categories.')
+              else if (validCategoryIds.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text(
+                      isPoolSource
+                          ? 'No categorized stickers in your pool yet.'
+                          : 'No categories available.',
+                      style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                    ),
+                  ),
+                )
               else
                 Wrap(
                   spacing: 8,
                   runSpacing: 0,
-                  children: _availableCategories.entries.map((entry) {
+                  children: _allWebCategories.entries
+                      .where((entry) => validCategoryIds.contains(entry.key)) // Filter Check
+                      .map((entry) {
                     final isSelected = currentFilters.contains(entry.key);
                     return FilterChip(
                       label: Text(entry.value),
@@ -182,10 +211,6 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                           newFilters.remove(entry.key);
                         }
                         prefs.setDailyFilterCategories(newFilters);
-                        // Optional: Refresh immediately on filter change?
-                        // Usually simpler to let user hit "Force Update"
-                        // or just wait for next day, but let's stick to explicit update for now
-                        // to avoid too many requests while toggling chips.
                       },
                     );
                   }).toList(),
