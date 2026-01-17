@@ -81,7 +81,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   void _search() {
     final query = _controller.text.trim().toLowerCase();
 
-    // If empty query & no categories, clear results
+    // 1. Show empty state if nothing selected/typed
     if (query.isEmpty && _selectedCategories.isEmpty) {
       setState(() {
         _futureResults = null;
@@ -90,38 +90,36 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     }
 
     setState(() {
-      // 1. FILTER LOCALLY (The "Partial DB" check)
-      // Find IDs that match the name (Hebrew or English)
       final matchingIds = _searchIndex.where((item) {
-        bool matches = false;
 
-        // Check English Name
-        if (item.englishName.toLowerCase().contains(query)) matches = true;
-        // Check Hebrew Name
-        if (item.hebrewName.toLowerCase().contains(query)) matches = true;
+        // 1. Category Logic
+        // If a category is selected, the item MUST have it.
+        if (_selectedCategories.isNotEmpty) {
+          // Safety check: ensure categoryIds is not null (it shouldn't be with new model)
+          if (item.categoryIds.isEmpty) return false;
 
-        return matches;
+          bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
+          if (!hasCategory) return false;
+        }
+
+        // 2. Name Logic
+        // If query is typed, it must match the name.
+        if (query.isNotEmpty) {
+          bool nameMatch =
+              item.hebrewName.toLowerCase().contains(query) ||
+                  item.englishName.toLowerCase().contains(query);
+          if (!nameMatch) return false;
+        }
+
+        return true;
       }).map((item) => item.id).toList();
 
-      // 2. CALL API (The "Use API as expected" part)
-      // If we found local matches, ask API for those specific IDs.
-      // If we found NO local matches (maybe user searched for content/quote?),
-      // we fall back to the standard API search.
-
+      // 3. Fetch Data
       final api = context.read<ApiService>();
-
-      if (matchingIds.isNotEmpty) {
-        // Option A: We found names! Fetch these specific stickers.
-        _futureResults = api.getStickersByIds(matchingIds);
-        debugPrint('Found local matches!');
+      if (matchingIds.isEmpty) {
+        _futureResults = Future.value([]);
       } else {
-        // Option B: No name match. Maybe they searched a Quote?
-        // Fallback to standard server-side search.
-        debugPrint('Did not find local matches...');
-        _futureResults = api.searchStickers(
-          query: query,
-          categoryIds: _selectedCategories.toList(),
-        );
+        _futureResults = api.getStickersByIds(matchingIds.take(100).toList());
       }
     });
   }
@@ -428,26 +426,26 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Search in:", style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  _buildGradientChip(
-                                      "Name (Title)", _searchInTitle, () =>
-                                      setState(() =>
-                                      _searchInTitle = !_searchInTitle)),
-                                  const SizedBox(width: 8),
-                                  _buildGradientChip("Meaning (Content)",
-                                      _searchInContent, () =>
-                                          setState(() =>
-                                          _searchInContent = !_searchInContent)),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              const Text("Topics:", style: TextStyle(
-                                  fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
+                              // const Text("Search in:", style: TextStyle(
+                              //     fontWeight: FontWeight.bold)),
+                              // const SizedBox(height: 8),
+                              // Row(
+                              //   children: [
+                              //     _buildGradientChip(
+                              //         "Name (Title)", _searchInTitle, () =>
+                              //         setState(() =>
+                              //         _searchInTitle = !_searchInTitle)),
+                              //     const SizedBox(width: 8),
+                              //     _buildGradientChip("Meaning (Content)",
+                              //         _searchInContent, () =>
+                              //             setState(() =>
+                              //             _searchInContent = !_searchInContent)),
+                              //   ],
+                              // ),
+                              // const SizedBox(height: 16),
+                              // const Text("Topics:", style: TextStyle(
+                              //     fontWeight: FontWeight.bold)),
+                              // const SizedBox(height: 8),
                               _availableCategories.isEmpty
                                   ? const Text("Loading topics...")
                                   : Wrap(
@@ -538,7 +536,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
               // SUBTITLE (English Name)
               subtitle: sticker.nameInHebrew.isNotEmpty
-                  ? Text(sticker.nameInHebrew)
+                  ? Text(sticker.nameInHebrew, textDirection: TextDirection.rtl)
                   : null,
 
               onTap: () {

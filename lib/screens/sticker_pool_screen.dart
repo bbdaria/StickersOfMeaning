@@ -5,6 +5,7 @@ import '../models/sticker.dart';
 import '../services/preferences_service.dart';
 import '../services/widget_service.dart';
 import 'sticker_search_screen.dart'; // Import for navigation
+import 'package:html/parser.dart' show parse;
 
 class StickerPoolScreen extends StatefulWidget {
   static const String routeName = '/sticker-pool';
@@ -163,9 +164,9 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                     )
                         : const Icon(Icons.sticky_note_2, size: 40),
 
-                    title: Text(sticker.text, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(parse(sticker.heQuote).body?.text ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.rtl),
                     subtitle: Text(
-                        sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.content,
+                        sticker.nameInHebrew.isNotEmpty ? sticker.nameInHebrew : sticker.content, textDirection: TextDirection.rtl,
                         maxLines: 1, overflow: TextOverflow.ellipsis
                     ),
                     trailing: PopupMenuButton(

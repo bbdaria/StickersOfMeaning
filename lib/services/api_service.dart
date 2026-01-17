@@ -5,20 +5,24 @@ import 'package:http/http.dart' as http;
 import '../models/sticker.dart';
 import 'preferences_service.dart';
 import 'widget_service.dart';
-import 'package:flutter/foundation.dart';
 import 'package:html_unescape/html_unescape.dart';
-
-
 
 class StickerIndexItem {
   final int id;
   final String hebrewName;
   final String englishName;
+  // FIX 1: Add this field to store the category IDs
+  final List<int> categoryIds;
 
-  StickerIndexItem({required this.id, required this.hebrewName, required this.englishName});
+  StickerIndexItem({
+    required this.id,
+    required this.hebrewName,
+    required this.englishName,
+    required this.categoryIds,
+  });
 
   factory StickerIndexItem.fromJson(Map<String, dynamic> json) {
-    var unescape = HtmlUnescape(); // Ensure you have this import
+    var unescape = HtmlUnescape();
 
     String heName = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
@@ -30,10 +34,21 @@ class StickerIndexItem {
       enName = unescape.convert(json['meta']['name_in_english'].toString());
     }
 
+    // FIX 2: Safely parse categories.
+    // If the API sends null (which happens if '_fields' is missing), we use []
+    List<int> cats = [];
+
+    // 2. Check if key exists and is actually a list
+    if (json['categories'] != null && json['categories'] is List) {
+      // 3. Convert safely
+      cats = List<int>.from(json['categories']);
+    }
+
     return StickerIndexItem(
       id: json['id'],
       hebrewName: heName,
       englishName: enName,
+      categoryIds: cats, // Pass the safe list
     );
   }
 }
@@ -70,14 +85,13 @@ class ApiService {
     int page = 1;
     bool hasMore = true;
 
-    // Keep fetching pages until we run out
     while (hasMore) {
-      // request only specific fields to keep it fast/small
       final uri = _buildUri(dbUrl, 'posts', {
         'per_page': '100',
         'page': page.toString(),
         'status': 'publish',
-        '_fields': 'id,title,meta', // <--- THE MAGIC: Only fetch what we need
+        // FIX 3: You MUST request 'categories' here, or the API won't send them!
+        '_fields': 'id,title,meta,categories',
       });
 
       try {
@@ -87,13 +101,11 @@ class ApiService {
           if (data.isEmpty) {
             hasMore = false;
           } else {
-            // Parse and add to list
             final items = data.map((json) => StickerIndexItem.fromJson(json)).toList();
             allItems.addAll(items);
             page++;
           }
         } else {
-          // If 400 (Bad Request), usually means page number is out of range
           hasMore = false;
         }
       } catch (e) {
@@ -106,13 +118,11 @@ class ApiService {
 
   Future<List<Sticker>> getStickersByIds(List<int> ids) async {
     if (ids.isEmpty) return [];
-
     final uri = _buildUri(dbUrl, 'posts', {
       '_embed': 'true',
-      'include': ids.join(','), // <--- Fetch only these specific matches
+      'include': ids.join(','),
       'per_page': '100',
     });
-
     final response = await http.get(uri);
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -125,11 +135,7 @@ class ApiService {
   Future<Map<int, String>> fetchCategories() async {
     final uri = _buildUri(dbUrl, 'categories', {'per_page': '100'});
     final response = await http.get(uri);
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load categories');
-    }
-
+    if (response.statusCode != 200) throw Exception('Failed to load categories');
     final List<dynamic> data = jsonDecode(response.body);
     return {for (var item in data) item['id']: item['name']};
   }
@@ -141,7 +147,7 @@ class ApiService {
   }) async {
     var english = RegExp(r'[a-zA-Z]');
     var searchKey = 'search';
-    if (english.hasMatch(query.split(' ')[0])){
+    if (query.isNotEmpty && english.hasMatch(query.split(' ')[0])){
       searchKey += '_en';
     }
 
@@ -160,18 +166,13 @@ class ApiService {
       params['categories'] = categoryIds.join(',');
     }
 
-    // --- FIX: Add Search Columns Support ---
     if (searchIn != null && searchIn.isNotEmpty) {
-      // Note: This requires WordPress 5.0+
       params['search_columns'] = searchIn;
     }
-    // ---------------------------------------
 
     final uri = _buildUri(dbUrl, 'posts', params);
-    debugPrint('Searching Sticker URL: $uri');
 
     final response = await http.get(uri);
-    debugPrint('Response Status Code: ${response.body}');
     if (response.statusCode != 200) {
       throw Exception('Failed to search: ${response.statusCode}');
     }
@@ -188,8 +189,6 @@ class ApiService {
     if (data.isEmpty) throw Exception('Empty');
     return Sticker.fromJson(data[0]);
   }
-
-  // --- New Daily Sticker Logic ---
 
   Future<List<int>> _fetchAllStickerIds() async {
     final uri = _buildUri(dbUrl, 'posts', {
@@ -223,7 +222,6 @@ class ApiService {
     final lastDate = prefs.dailyDate;
     final currentId = prefs.dailyStickerId;
 
-    // 1. If same day, return saved sticker
     if (lastDate == todayString && currentId != null) {
       try {
         return await _fetchStickerById(currentId);
@@ -232,7 +230,6 @@ class ApiService {
       }
     }
 
-    // 2. New day or error: pick new unique sticker
     final allIds = await _fetchAllStickerIds();
     if (allIds.isEmpty) throw Exception('No stickers found in database');
 

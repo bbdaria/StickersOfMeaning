@@ -193,6 +193,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, StickerSearchScreen.routeName);
+        },
+        backgroundColor: const Color(0xFF1E3A8A), // Consistent App Blue
+        child: const Icon(Icons.search, color: Colors.white),
+      ),
       body: RefreshIndicator(
         onRefresh: _refreshSticker,
         child: ListView(
