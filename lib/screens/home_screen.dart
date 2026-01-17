@@ -173,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         leading: IconButton(
-          icon: const Icon(Icons.info_outline),
+          icon: const Icon(Icons.info_outline, size: 25),
           tooltip: 'Visit Site',
           onPressed: () => _openExternalUrl(context, 'https://stickersofmeaning.org/contact/'),
         ),
@@ -186,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black87, size: 22),
+            icon: const Icon(Icons.settings, color: Colors.black87, size: 25),
             onPressed: () {
               Navigator.pushNamed(context, PreferencesScreen.routeName);
             },

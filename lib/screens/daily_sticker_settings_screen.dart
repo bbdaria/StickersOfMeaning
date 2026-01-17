@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
 import '../services/api_service.dart';
+import '../services/widget_service.dart';
 
 class DailyStickerSettingsScreen extends StatefulWidget {
-  static const String routeName = '/settings/daily_sticker';
+  static const routeName = '/daily-settings';
 
   const DailyStickerSettingsScreen({super.key});
 
@@ -13,92 +14,126 @@ class DailyStickerSettingsScreen extends StatefulWidget {
 }
 
 class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen> {
-  Map<int, String> _availableCategories = {};
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await context.read<ApiService>().fetchCategories();
-      if (mounted) {
-        setState(() {
-          _availableCategories = categories;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final prefs = context.watch<PreferencesService>();
-    final isWeb = prefs.stickerSource == 'web';
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Daily Sticker Preferences')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // 1. Source Toggle
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Sticker Source', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'web', label: Text('From Web')),
-                      ButtonSegment(value: 'pool', label: Text('From Pool')),
-                    ],
-                    selected: {prefs.stickerSource},
-                    onSelectionChanged: (Set<String> newSelection) {
-                      prefs.setStickerSource(newSelection.first);
-                    },
+      appBar: AppBar(title: const Text('Daily Sticker Settings')),
+      body: Consumer<PreferencesService>(
+        builder: (context, prefs, child) {
+          final poolSize = prefs.getStickerPool().length;
+
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Text(
+                'Source',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Where should the daily sticker come from?',
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+
+              // --- SOURCE TOGGLE ---
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'web',
+                    label: Text('Random from web'),
+                    icon: Icon(Icons.public),
+                  ),
+                  ButtonSegment(
+                    value: 'pool',
+                    label: Text('My collection'),
+                    icon: Icon(Icons.collections_bookmark),
                   ),
                 ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // 2. Filters
-          const Text('Sticker Pool Filters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_availableCategories.isEmpty)
-            const Text('No categories available.')
-          else
-            ..._availableCategories.entries.map((entry) {
-              final idStr = entry.key.toString();
-              final isSelected = prefs.stickerFilters.contains(idStr);
-
-              return CheckboxListTile(
-                title: Text(entry.value),
-                value: isSelected,
-                onChanged: (bool? checked) {
-                  final currentFilters = List<String>.from(prefs.stickerFilters);
-                  if (checked == true) {
-                    currentFilters.add(idStr);
-                  } else {
-                    currentFilters.remove(idStr);
-                  }
-                  prefs.setStickerFilters(currentFilters);
+                selected: {prefs.stickerSource},
+                onSelectionChanged: (Set<String> newSelection) {
+                  prefs.setStickerSource(newSelection.first);
                 },
-              );
-            }),
-        ],
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.comfortable,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+
+              if (prefs.stickerSource == 'pool' && poolSize == 0)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Your collection is empty! We will use the Web until you add some stickers.',
+                          style: TextStyle(color: Colors.orange[800], fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 24),
+
+              // --- FORCE REFRESH ---
+              const Text(
+                'Actions',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Refresh Today\'s Sticker'),
+                subtitle: const Text('Update the widget and home screen immediately with a new sticker.'),
+                leading: const Icon(Icons.refresh, color: Color(0xFF1E3A8A)),
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                  );
+
+                  try {
+                    await context.read<ApiService>().getDailySticker(
+                      prefs,
+                      context.read<WidgetService>(),
+                      forceRefresh: true,
+                    );
+
+                    if (mounted) {
+                      Navigator.pop(context); // Close loader
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Updated successfully!')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }

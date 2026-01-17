@@ -189,39 +189,44 @@ class ApiService {
     return Sticker.fromJson(data[0]);
   }
 
-  Future<List<int>> _fetchAllStickerIds() async {
-    final uri = _buildUri(dbUrl, 'posts', {
-      '_fields': 'id',
-      'per_page': '100',
-      'status': 'publish',
-    });
+  // Future<List<int>> _fetchAllStickerIds() async {
+  //   final uri = _buildUri(dbUrl, 'posts', {
+  //     '_fields': 'id',
+  //     'per_page': '100',
+  //     'status': 'publish',
+  //   });
+  //
+  //   final response = await http.get(uri);
+  //   if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
+  //
+  //   final List<dynamic> data = jsonDecode(response.body);
+  //   return data.map<int>((e) => e['id'] as int).toList();
+  // }
 
-    final response = await http.get(uri);
-    if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
-
-    final List<dynamic> data = jsonDecode(response.body);
-    return data.map<int>((e) => e['id'] as int).toList();
-  }
-
-  Future<Sticker> _fetchStickerById(int id) async {
-    final uri = _buildUri(dbUrl, 'posts/$id', {'_embed': 'true'});
-    final response = await http.get(uri);
-    if (response.statusCode != 200) throw Exception('Failed to fetch sticker details');
-
-    return Sticker.fromJson(jsonDecode(response.body));
-  }
+  // Future<Sticker> _fetchStickerById(int id) async {
+  //   final uri = _buildUri(dbUrl, 'posts/$id', {'_embed': 'true'});
+  //   final response = await http.get(uri);
+  //   if (response.statusCode != 200) throw Exception('Failed to fetch sticker details');
+  //
+  //   return Sticker.fromJson(jsonDecode(response.body));
+  // }
 
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
-      WidgetService widgetService
-      ) async {
+      WidgetService widgetService, {
+        bool forceRefresh = false, // <--- NEW PARAMETER
+      }) async {
     final now = DateTime.now();
     final todayString = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
 
     final lastDate = prefs.dailyDate;
     final currentId = prefs.dailyStickerId;
 
-    if (lastDate == todayString && currentId != null) {
+    // 1. Return cached sticker if valid and not forcing refresh
+    if (!forceRefresh && lastDate == todayString && currentId != null) {
+      if (prefs.isStickerInPool(currentId)) {
+        return prefs.getStickerPool().firstWhere((s) => s.id == currentId);
+      }
       try {
         return await _fetchStickerById(currentId);
       } catch (e) {
@@ -229,11 +234,37 @@ class ApiService {
       }
     }
 
+    // 2. Generate New Sticker
+    Sticker newSticker;
+
+    // Check Preference
+    if (prefs.stickerSource == 'pool') {
+      final pool = prefs.getStickerPool();
+      if (pool.isNotEmpty) {
+        // Pick random from pool
+        newSticker = pool[Random().nextInt(pool.length)];
+      } else {
+        // Fallback to web
+        newSticker = await _fetchRandomFromWeb(prefs);
+      }
+    } else {
+      // Web strategy
+      newSticker = await _fetchRandomFromWeb(prefs);
+    }
+
+    // 3. Save & Update
+    await prefs.setDailySticker(newSticker.id, todayString);
+    await widgetService.updateStickerWidget(newSticker);
+
+    return newSticker;
+  }
+
+
+  Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs) async {
     final allIds = await _fetchAllStickerIds();
     if (allIds.isEmpty) throw Exception('No stickers found in database');
 
     final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
-
     List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
 
     if (availableIds.isEmpty) {
@@ -242,11 +273,47 @@ class ApiService {
     }
 
     final randomId = availableIds[Random().nextInt(availableIds.length)];
-    final newSticker = await _fetchStickerById(randomId);
-
-    await prefs.setDailySticker(randomId, todayString);
-    await widgetService.updateStickerWidget(newSticker);
-
-    return newSticker;
+    return await _fetchStickerById(randomId);
   }
+
+  // ... (Ensure _fetchAllStickerIds and _fetchStickerById are present in the class) ...
+  Future<List<int>> _fetchAllStickerIds() async {
+    final uri = _buildUri(dbUrl, 'posts', {
+      '_fields': 'id',
+      'per_page': '100',
+      'status': 'publish',
+    });
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('Failed to fetch IDs');
+    final List<dynamic> data = jsonDecode(response.body);
+    return data.map<int>((e) => e['id'] as int).toList();
+  }
+
+  Future<Sticker> _fetchStickerById(int id) async {
+    final uri = _buildUri(dbUrl, 'posts/$id', {'_embed': 'true'});
+    final response = await http.get(uri);
+    if (response.statusCode != 200) throw Exception('Failed to fetch sticker details');
+    return Sticker.fromJson(jsonDecode(response.body));
+  }
+
+
+  // Helper for the original Web Logic
+  // Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs) async {
+  //   final allIds = await _fetchAllStickerIds();
+  //   if (allIds.isEmpty) throw Exception('No stickers found in database');
+  //
+  //   final seenIds = prefs.seenStickerIds.map(int.parse).toSet();
+  //
+  //   // Filter out seen ones
+  //   List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
+  //
+  //   // Reset history if all seen
+  //   if (availableIds.isEmpty) {
+  //     await prefs.clearHistory();
+  //     availableIds = allIds;
+  //   }
+  //
+  //   final randomId = availableIds[Random().nextInt(availableIds.length)];
+  //   return await _fetchStickerById(randomId);
+  // }
 }
