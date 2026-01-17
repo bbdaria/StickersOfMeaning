@@ -11,6 +11,8 @@ class PreferencesService extends ChangeNotifier {
   static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
 
+  String _appPath = '';
+
   // --- Keys ---
   static const _keyLanguage = 'app_language';
   static const _keyStickerSource = 'sticker_source';
@@ -30,11 +32,14 @@ class PreferencesService extends ChangeNotifier {
   double _widgetFontSize = 16.0;
   bool _widgetShowImage = true;
 
-  // --- NEW: In-Memory Cache for Instant UI ---
   List<Sticker> _cachedPool = [];
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+
+    // Get directory once
+    final dir = await getApplicationDocumentsDirectory();
+    _appPath = dir.path;
 
     _language = _prefs.getString(_keyLanguage) ?? 'en';
     _stickerSource = _prefs.getString(_keyStickerSource) ?? 'web';
@@ -42,17 +47,27 @@ class PreferencesService extends ChangeNotifier {
     _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
-    // --- NEW: Load pool into memory once at startup ---
     _loadPoolToMemory();
   }
 
-  // --- NEW: Internal loader ---
+  // --- Robust Loader ---
   void _loadPoolToMemory() {
     final String? jsonString = _prefs.getString(_poolKey);
     if (jsonString != null) {
       try {
         final List<dynamic> decoded = jsonDecode(jsonString);
-        _cachedPool = decoded.map((e) => Sticker.fromJson(e)).toList();
+        _cachedPool = decoded.map((e) {
+          // Robustly reconstruct the path
+          if (e['localImagePath'] != null && _appPath.isNotEmpty) {
+            final String rawPath = e['localImagePath'].toString();
+            // Split by BOTH '/' and '\' to safely get the filename on any OS
+            final String fileName = rawPath.split(RegExp(r'[/\\]')).last;
+
+            // Rebuild valid full path
+            e['localImagePath'] = '$_appPath/$fileName';
+          }
+          return Sticker.fromJson(e);
+        }).toList();
       } catch (e) {
         debugPrint('Error parsing pool: $e');
         _cachedPool = [];
@@ -71,7 +86,7 @@ class PreferencesService extends ChangeNotifier {
   int? get dailyStickerId => _prefs.getInt(_keyDailyStickerId);
   List<String> get seenStickerIds => _prefs.getStringList(_keySeenStickers) ?? [];
 
-  // --- Setters (Existing) ---
+  // --- Setters ---
   Future<void> setLanguage(String value) async {
     _language = value;
     await _prefs.setString(_keyLanguage, value);
@@ -123,12 +138,11 @@ class PreferencesService extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------
-  // POOL MANAGEMENT (OPTIMIZED)
+  // POOL MANAGEMENT
   // ---------------------------------------------------------
 
-  // 1. Return the in-memory list (Instant)
   List<Sticker> getStickerPool() {
-    return List.unmodifiable(_cachedPool); // Return copy/view
+    return List.unmodifiable(_cachedPool);
   }
 
   bool isStickerInPool(int id) {
@@ -138,34 +152,27 @@ class PreferencesService extends ChangeNotifier {
   Future<void> addToPool(Sticker sticker) async {
     if (isStickerInPool(sticker.id)) return;
 
-    // A. Start image download in background (don't await it for the UI update yet)
-    // We create a temporary sticker with the URL, add it to UI immediately
+    // 1. Add to Memory (Optimistic UI)
     Sticker stickerToSave = sticker;
-
-    // Update Memory
     _cachedPool.add(stickerToSave);
-
-    // B. INSTANT UPDATE: Tell UI to paint the "filled" ribbon
     notifyListeners();
 
-    // C. Perform heavy lifting in background
+    // 2. Background: Download & Save
     try {
       if (sticker.imageUrl.isNotEmpty) {
+        // Returns the FULL valid path
         final localPath = await _downloadAndSaveImage(sticker.imageUrl, sticker.id);
-        // Update the sticker in the list with the local path
+
         final index = _cachedPool.indexWhere((s) => s.id == sticker.id);
         if (index != -1) {
           _cachedPool[index] = sticker.copyWith(localImagePath: localPath);
         }
       }
 
-      // Persist to Disk
       await _savePoolToDisk();
-
-      // Notify again to ensure the local path is available to UI if needed
       notifyListeners();
     } catch (e) {
-      print('Background save error: $e');
+      debugPrint('Background save error: $e');
     }
   }
 
@@ -175,17 +182,13 @@ class PreferencesService extends ChangeNotifier {
 
     final stickerToRemove = _cachedPool[index];
 
-    // A. Update Memory
     _cachedPool.removeAt(index);
-
-    // B. INSTANT UPDATE: Tell UI to paint the "empty" ribbon
     notifyListeners();
 
-    // C. Cleanup in background
     if (stickerToRemove.localImagePath != null) {
       final file = File(stickerToRemove.localImagePath!);
       if (await file.exists()) {
-        await file.delete().catchError((e) => print(e));
+        await file.delete().catchError((e) => debugPrint(e.toString()));
       }
     }
 
@@ -193,24 +196,39 @@ class PreferencesService extends ChangeNotifier {
   }
 
   Future<void> _savePoolToDisk() async {
-    // Encode the in-memory list
-    final jsonList = _cachedPool.map((s) => s.toJson()).toList();
+    // Robust Saver: Strip everything except the filename
+    final jsonList = _cachedPool.map((s) {
+      final json = s.toJson();
+
+      if (json['localImagePath'] != null) {
+        final String fullPath = json['localImagePath'].toString();
+        // Robust split to ensure we get just the name
+        final String fileName = fullPath.split(RegExp(r'[/\\]')).last;
+        json['localImagePath'] = fileName;
+      }
+
+      return json;
+    }).toList();
+
     await _prefs.setString(_poolKey, jsonEncode(jsonList));
   }
 
-  // Helper: Download Image
   Future<String> _downloadAndSaveImage(String url, int id) async {
     final directory = await getApplicationDocumentsDirectory();
-    final extension = url.split('.').last;
-    // Basic sanitization of extension
-    final safeExt = extension.length > 4 ? 'jpg' : extension;
 
-    final filePath = '${directory.path}/pool_$id.$safeExt';
+    // Clean extension logic
+    final uri = Uri.parse(url);
+    String extension = uri.pathSegments.isNotEmpty ? uri.pathSegments.last.split('.').last : 'jpg';
+    if (extension.length > 4) extension = 'jpg'; // safety fallback
+
+    final fileName = 'pool_$id.$extension';
+    final filePath = '${directory.path}/$fileName';
     final file = File(filePath);
 
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
-      await file.writeAsBytes(response.bodyBytes);
+      // FIX: Add flush:true to ensure data is written to disk immediately
+      await file.writeAsBytes(response.bodyBytes, flush: true);
       return filePath;
     } else {
       throw Exception('Failed to download image');

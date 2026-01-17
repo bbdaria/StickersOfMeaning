@@ -57,8 +57,8 @@ class Sticker {
     if (json['meta'] != null) {
       nameEn = cleanText(json['meta']['name_in_english']);
       nameHe = cleanText(json['meta']['name_in_hebrew']);
-      quoteEn = '\"' + cleanText(json['meta']['en_quote']) + '\"';
-      quoteHe = '\"' + cleanText(json['meta']['he_quote']) + '\"';
+      quoteEn = cleanText(json['meta']['en_quote']);
+      quoteHe = cleanText(json['meta']['he_quote']);
     }
     // -------------------------------------------------------
 

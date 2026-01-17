@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750),));
+    ).showSnackBar(const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750)));
   }
 
 

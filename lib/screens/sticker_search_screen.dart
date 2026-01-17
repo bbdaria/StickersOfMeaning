@@ -244,7 +244,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   // A. Save to Pool Button
                   Expanded(
                     child: OutlinedButton.icon(
-                      icon: const Icon(Icons.bookmark_border, size: 20),
+                      icon: const Icon(Icons.bookmark_add, size: 20),
                       label: const Text('Save to Pool'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1E3A8A),
@@ -264,7 +264,13 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                             duration: const Duration(seconds: 750),
                             action: SnackBarAction(
                               label: 'View',
-                              onPressed: () => Navigator.pushNamed(context, StickerPoolScreen.routeName),
+                              onPressed: () {
+                                // We must check 'mounted' again because this callback
+                                // runs later, when the user clicks the button.
+                                if (mounted) {
+                                  Navigator.pushNamed(context, StickerPoolScreen.routeName);
+                                }
+                              },
                             ),
                           ),
                         );

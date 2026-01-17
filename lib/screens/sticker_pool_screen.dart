@@ -141,7 +141,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.all(8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                     leading: sticker.imageUrl.isNotEmpty
                         ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -149,15 +149,16 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                         image: imageProvider,
                         width: 60,
                         height: 60,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                         errorBuilder: (_,__,___) => const Icon(Icons.broken_image),
                       ),
                     )
                         : const Icon(Icons.sticky_note_2, size: 40),
-                    title: Text(sticker.text, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(sticker.heQuote, maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.rtl),
                     subtitle: Text(
-                        sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.content,
-                        maxLines: 1, overflow: TextOverflow.ellipsis
+                        sticker.nameInHebrew.isNotEmpty ? sticker.nameInHebrew : sticker.content,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        textDirection: TextDirection.rtl
                     ),
                     trailing: PopupMenuButton(
                       itemBuilder: (context) => [
