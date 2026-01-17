@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750),));
+    ).showSnackBar(const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750)));
   }
 
 
@@ -192,6 +192,13 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, StickerSearchScreen.routeName);
+        },
+        backgroundColor: const Color(0xFF1E3A8A), // Consistent App Blue
+        child: const Icon(Icons.search, color: Colors.white),
       ),
       body: RefreshIndicator(
         onRefresh: _refreshSticker,

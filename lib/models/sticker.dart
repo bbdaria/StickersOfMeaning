@@ -8,13 +8,12 @@ class Sticker {
   final String postUrl;
   final DateTime? date;
 
-  // Extra metadata
   final String nameInEnglish;
   final String nameInHebrew;
   final String enQuote;
   final String heQuote;
 
-  // NEW: Local Path for offline access
+  // This field is crucial for the pool
   final String? localImagePath;
 
   Sticker({
@@ -57,8 +56,8 @@ class Sticker {
     if (json['meta'] != null) {
       nameEn = cleanText(json['meta']['name_in_english']);
       nameHe = cleanText(json['meta']['name_in_hebrew']);
-      quoteEn = '\"' + cleanText(json['meta']['en_quote']) + '\"';
-      quoteHe = '\"' + cleanText(json['meta']['he_quote']) + '\"';
+      quoteEn = cleanText(json['meta']['en_quote']);
+      quoteHe = cleanText(json['meta']['he_quote']);
     }
     // -------------------------------------------------------
 
@@ -128,33 +127,40 @@ class Sticker {
       }
     }
 
-    // 4. Get Link
+    // Fallback if imageUrl is directly in root (sometimes used in local saves)
+    if (imgUrl.isEmpty && json['imageUrl'] != null) {
+      imgUrl = json['imageUrl'];
+    }
+
+    // 5. Link
     String link = json['link'] ?? '';
 
+    // --- CRITICAL FIX: READ LOCAL PATH ---
     String? localPath = json['localImagePath'];
+    // -------------------------------------
 
     return Sticker(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      text: textContent,      // defined in your existing logic
-      content: quoteContent,  // defined in your existing logic
-      imageUrl: imgUrl,       // defined in your existing logic
-      postUrl: link,          // defined in your existing logic
+      text: textContent,
+      content: quoteContent,
+      imageUrl: imgUrl,
+      postUrl: link,
       date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      nameInEnglish: nameEn,  // defined in your existing logic
-      nameInHebrew: nameHe,   // defined in your existing logic
-      enQuote: quoteEn,       // defined in your existing logic
-      heQuote: quoteHe,       // defined in your existing logic
-      localImagePath: localPath, // <--- NEW
+      nameInEnglish: nameEn,
+      nameInHebrew: nameHe,
+      enQuote: quoteEn,
+      heQuote: quoteHe,
+      localImagePath: localPath, // <--- IMPORTANT
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'title': {'rendered': text}, // mimic WP structure for consistency
+      'title': {'rendered': text},
       'content': {'rendered': content},
-      'localImagePath': localImagePath,
-      'imageUrl': imageUrl, // keep original URL as backup
+      'localImagePath': localImagePath, // <--- IMPORTANT
+      'imageUrl': imageUrl,
       'link': postUrl,
       'date': date?.toIso8601String(),
       'meta': {
@@ -166,7 +172,6 @@ class Sticker {
     };
   }
 
-  // NEW: Helper to create a copy with a local path
   Sticker copyWith({String? localImagePath}) {
     return Sticker(
       id: id,
