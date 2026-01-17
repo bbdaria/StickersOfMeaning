@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stickers_of_meaning/screens/daily_sticker_settings_screen.dart';
 import 'package:stickers_of_meaning/screens/sticker_pool_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -590,18 +591,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 20),
             _buildMenuButton(
-              title: 'Manage your stickers',
+              title: 'Your collection',
               subtitle: 'Explore and add to the collection',
               icon: Icons.collections,
               onTap: () =>
                   Navigator.pushNamed(context, StickerPoolScreen.routeName),
             ),
             _buildMenuButton(
-              title: 'Setup your widget',
+              title: 'Customize your widget',
               subtitle: 'Settings and customization',
-              icon: Icons.widgets,
+              icon: Icons.color_lens,
               onTap: () =>
                   Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
+            ),
+            _buildMenuButton(
+              title: 'Content preferences',
+              subtitle: 'What would you like to see?',
+              icon: Icons.widgets,
+              onTap: () =>
+                  Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName),
             ),
             _buildMenuButton(
               title: 'Visit our site',

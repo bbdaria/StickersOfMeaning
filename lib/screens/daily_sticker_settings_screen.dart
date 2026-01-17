@@ -68,7 +68,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Widget selection preferences')),
+      appBar: AppBar(title: const Text('Widget Preferences')),
       body: Consumer<PreferencesService>(
         builder: (context, prefs, child) {
           final pool = prefs.getStickerPool();

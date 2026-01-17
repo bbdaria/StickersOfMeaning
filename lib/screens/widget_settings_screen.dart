@@ -67,7 +67,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
             },
           ),
           const Divider(),
-
           // 2. Font Size Slider (Only visible if Image is OFF)
           ListTile(
             title: const Text('Widget Font Size'),

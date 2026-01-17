@@ -51,7 +51,7 @@ class PreferencesScreen extends StatelessWidget {
             ),
             child: ListTile(
               leading: const Icon(Icons.calendar_today, color: Color(0xFF001a7e)),
-              title: const Text('Daily Sticker Preferences'),
+              title: const Text('Sticker Preferences'),
               subtitle: const Text('Source & Filters'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
@@ -71,7 +71,7 @@ class PreferencesScreen extends StatelessWidget {
             ),
             child: ListTile(
               leading: const Icon(Icons.widgets, color: Color(0xFF001a7e)),
-              title: const Text('Widget Preferences'),
+              title: const Text('Widget Customization'),
               subtitle: const Text('Font size & Image settings'),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
