@@ -19,109 +19,175 @@ class StickerSearchScreen extends StatefulWidget {
 }
 
 class _StickerSearchScreenState extends State<StickerSearchScreen> {
+  // -- UI Controllers --
   final TextEditingController _controller = TextEditingController();
-  Future<List<Sticker>>? _futureResults;
+  final ScrollController _scrollController = ScrollController();
 
+  // -- Data Source (The "Index") --
+  List<StickerIndexItem> _searchIndex = [];
   Map<int, String> _availableCategories = {};
+  bool _isIndexLoading = true;
+
+  // -- Filter State --
   final Set<int> _selectedCategories = {};
 
-  bool _searchInTitle = true;
-  bool _searchInContent = true;
-
-  List<StickerIndexItem> _searchIndex = []; // The local "Partial DB"
-  bool _isIndexLoading = true;
+  // -- Results State --
+  List<int> _filteredIds = []; // All potential matches (just IDs)
+  List<Sticker> _displayedStickers = []; // Full stickers loaded so far
+  bool _isLoadingMore = false;
+  bool _hasSearched = false; // To distinguish "start" vs "no results"
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
     _loadIndexInBackground();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // If scrolled to bottom (threshold 200px), load more
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreStickers();
+    }
   }
 
   Future<void> _loadIndexInBackground() async {
     final api = context.read<ApiService>();
     try {
-      // 1. Fetch Categories (fast)
+      // 1. Fetch Categories
       final cats = await api.fetchCategories();
+      if (mounted) setState(() => _availableCategories = cats);
 
-      if (mounted) {
-        setState(() {
-          _availableCategories = cats;
-        });
-      }
+      // 2. Fetch Index with Incremental Updates
+      await api.fetchStickerIndex(
+        onBatchLoaded: (newBatch) {
+          if (!mounted) return;
+          setState(() {
+            _searchIndex.addAll(newBatch);
 
-      // 2. Fetch the Index (heavier, but runs in background)
-      final index = await api.fetchStickerIndex();
-
-      if (mounted) {
-        setState(() {
-          _searchIndex = index;
-          _isIndexLoading = false;
-        });
-      }
+            // If the user already has a filter active, update results live
+            if (_controller.text.isNotEmpty || _selectedCategories.isNotEmpty) {
+              _applyFilter();
+            }
+          });
+        },
+      );
+      if (mounted) setState(() => _isIndexLoading = false);
     } catch (e) {
       debugPrint('Index load error: $e');
       if (mounted) setState(() => _isIndexLoading = false);
     }
   }
 
-  Future<void> _loadCategories() async {
-    try {
-      final categories = await context.read<ApiService>().fetchCategories();
-      if (mounted) {
-        setState(() {
-          _availableCategories = categories;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading categories: $e');
-    }
-  }
-
-  void _search() {
+  // --- CORE LOGIC: Filter Index -> Get IDs ---
+  void _applyFilter() {
     final query = _controller.text.trim().toLowerCase();
 
-    // 1. Show empty state if nothing selected/typed
+    // 1. Reset if empty
     if (query.isEmpty && _selectedCategories.isEmpty) {
       setState(() {
-        _futureResults = null;
+        _filteredIds = [];
+        _displayedStickers = [];
+        _hasSearched = false;
       });
       return;
     }
 
     setState(() {
-      final matchingIds = _searchIndex.where((item) {
+      _hasSearched = true;
 
-        // 1. Category Logic
-        // If a category is selected, the item MUST have it.
+      // 2. Find matching IDs from local index
+      _filteredIds = _searchIndex.where((item) {
+        // Category Match
         if (_selectedCategories.isNotEmpty) {
-          // Safety check: ensure categoryIds is not null (it shouldn't be with new model)
           if (item.categoryIds.isEmpty) return false;
-
           bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
           if (!hasCategory) return false;
         }
 
-        // 2. Name Logic
-        // If query is typed, it must match the name.
+        // Text Match
         if (query.isNotEmpty) {
           bool nameMatch =
               item.hebrewName.toLowerCase().contains(query) ||
                   item.englishName.toLowerCase().contains(query);
           if (!nameMatch) return false;
         }
-
         return true;
       }).map((item) => item.id).toList();
-
-      // 3. Fetch Data
-      final api = context.read<ApiService>();
-      if (matchingIds.isEmpty) {
-        _futureResults = Future.value([]);
-      } else {
-        _futureResults = api.getStickersByIds(matchingIds.take(100).toList());
-      }
     });
+
+    // 3. Reset displayed list and load first batch
+    // IMPORTANT: Only clear if we are starting a fresh search logic,
+    // but here we simply re-fetch to ensure consistency.
+    _displayedStickers.clear();
+
+    if (_filteredIds.isNotEmpty) {
+      _loadMoreStickers();
+    } else {
+      // Safety Net: Fallback to Server if local index found nothing
+      _fetchServerFallback();
+    }
+  }
+
+  // --- BATCH LOADER ---
+  Future<void> _loadMoreStickers() async {
+    if (_isLoadingMore) return;
+    // Stop if we have displayed everything
+    if (_displayedStickers.length >= _filteredIds.length) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final api = context.read<ApiService>();
+
+      // Calculate next batch
+      final startIndex = _displayedStickers.length;
+      final count = 20; // Load 20 at a time
+      final idsToLoad = _filteredIds.skip(startIndex).take(count).toList();
+
+      if (idsToLoad.isNotEmpty) {
+        final newStickers = await api.getStickersByIds(idsToLoad);
+        if (mounted) {
+          setState(() {
+            _displayedStickers.addAll(newStickers);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading more stickers: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  // --- FALLBACK: Direct API Search ---
+  Future<void> _fetchServerFallback() async {
+    setState(() => _isLoadingMore = true);
+    try {
+      final api = context.read<ApiService>();
+      final results = await api.searchStickers(
+        query: _controller.text.trim(),
+        categoryIds: _selectedCategories.toList(),
+      );
+      if (mounted) {
+        setState(() {
+          _displayedStickers = results;
+          // We can't really pagination easily here without complex state,
+          // so we just show the first page from server.
+        });
+      }
+    } catch (e) {
+      debugPrint("Server fallback error: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
   }
 
   void _showStickerDetails(Sticker sticker) {
@@ -351,7 +417,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         child: TextField(
                           controller: _controller,
                           textInputAction: TextInputAction.search,
-                          onSubmitted: (_) => _search(),
+                          onChanged: (_) => _applyFilter(),
                           decoration: InputDecoration(
                             labelText: 'Search...',
                             hintText: 'Type to search...',
@@ -394,7 +460,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         child: IconButton(
                           icon: const Icon(Icons.arrow_forward, color: Colors
                               .white),
-                          onPressed: _search,
+                          onPressed: _applyFilter,
                         ),
                       ),
                     ],
@@ -454,7 +520,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                                         } else {
                                           _selectedCategories.add(entry.key);
                                         }
-                                        _search();
+                                        _applyFilter();
                                       });
                                     },
                                   );
@@ -483,83 +549,79 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     final prefs = Provider.of<PreferencesService>(context);
     final isEnglish = prefs.language == 'en';
 
-    if (_futureResults == null) {
-      return const Center(child: Text(''));
+    if (!_hasSearched) {
+      return const Center(child: Text('Type or select a category to start searching.'));
     }
 
-    return FutureBuilder<List<Sticker>>(
-      future: _futureResults,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+    if (_displayedStickers.isEmpty) {
+      if (_isLoadingMore) return const Center(child: CircularProgressIndicator());
+      return const Center(child: Text('No stickers found.'));
+    }
+
+    return ListView.separated(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(8),
+      itemCount: _displayedStickers.length + (_isLoadingMore ? 1 : 0),
+      separatorBuilder: (_, __) => const Divider(),
+      itemBuilder: (context, index) {
+        if (index == _displayedStickers.length) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          ));
         }
 
-        final results = snapshot.data ?? [];
-        if (results.isEmpty) {
-          return const Center(
-              child: Text('No stickers found matching your filters.'));
+        final sticker = _displayedStickers[index];
+        String displayName;
+
+        if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
+          displayName = sticker.nameInEnglish;
+        } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
+          displayName = sticker.nameInHebrew;
+        } else {
+          // Fallback to the default "text" (Usually Hebrew Title)
+          displayName = sticker.text;
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(8),
-          itemCount: results.length,
-          separatorBuilder: (_, __) => const Divider(),
-          itemBuilder: (context, index) {
-            final sticker = results[index];
-            String displayName;
+        // 3. Determine Display Quote (Subtitle)
+        String displayQuote;
+        if (isEnglish && sticker.enQuote.isNotEmpty) {
+          displayQuote = sticker.enQuote;
+        } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
+          displayQuote = sticker.heQuote;
+        } else {
+          // Fallback to the default "content" (Usually Hebrew Quote)
+          displayQuote = sticker.content;
+        }
 
-            if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
-              displayName = sticker.nameInEnglish;
-            } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
-              displayName = sticker.nameInHebrew;
-            } else {
-              // Fallback to the default "text" (Usually Hebrew Title)
-              displayName = sticker.text;
-            }
+        return ListTile(
+          leading: sticker.imageUrl.isNotEmpty
+              ? ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              sticker.imageUrl,
+              width: 50, height: 50, fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(Icons.image),
+            ),
+          )
+              : const Icon(Icons.sticky_note_2),
 
-            // 3. Determine Display Quote (Subtitle)
-            String displayQuote;
-            if (isEnglish && sticker.enQuote.isNotEmpty) {
-              displayQuote = sticker.enQuote;
-            } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
-              displayQuote = sticker.heQuote;
-            } else {
-              // Fallback to the default "content" (Usually Hebrew Quote)
-              displayQuote = sticker.content;
-            }
+          // PRIMARY TITLE (Hebrew)
+          title: Text(
+            displayName,
+            textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
 
-            return ListTile(
-              leading: sticker.imageUrl.isNotEmpty
-                  ? ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  sticker.imageUrl,
-                  width: 50, height: 50, fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.image),
-                ),
-              )
-                  : const Icon(Icons.sticky_note_2),
-
-              // PRIMARY TITLE (Hebrew)
-              title: Text(
-                displayName,
-                textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-
-              // SUBTITLE (English Name)
-              subtitle: Text(
-                  parse(displayQuote).body?.text ?? '',
-                  textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis
-              ),
-              onTap: () {
-                _showStickerDetails(sticker);
-              },
-            );
+          // SUBTITLE (English Name)
+          subtitle: Text(
+              parse(displayQuote).body?.text ?? '',
+              textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis
+          ),
+          onTap: () {
+            _showStickerDetails(sticker);
           },
         );
       },

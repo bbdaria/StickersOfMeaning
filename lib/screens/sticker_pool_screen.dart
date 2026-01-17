@@ -156,7 +156,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Image(
                         image: imageProvider, // Use the provider we found
-                        width: 60,
+                        width: 80,
                         height: 60,
                         fit: BoxFit.contain,
                         errorBuilder: (_,__,___) => const Icon(Icons.broken_image),

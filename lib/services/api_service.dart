@@ -80,8 +80,9 @@ class ApiService {
     return uri;
   }
 
-  Future<List<StickerIndexItem>> fetchStickerIndex() async {
-    List<StickerIndexItem> allItems = [];
+  Future<void> fetchStickerIndex({
+    required Function(List<StickerIndexItem>) onBatchLoaded,
+  }) async {
     int page = 1;
     bool hasMore = true;
 
@@ -90,7 +91,6 @@ class ApiService {
         'per_page': '100',
         'page': page.toString(),
         'status': 'publish',
-        // FIX 3: You MUST request 'categories' here, or the API won't send them!
         '_fields': 'id,title,meta,categories',
       });
 
@@ -102,7 +102,7 @@ class ApiService {
             hasMore = false;
           } else {
             final items = data.map((json) => StickerIndexItem.fromJson(json)).toList();
-            allItems.addAll(items);
+            onBatchLoaded(items);
             page++;
           }
         } else {
@@ -113,7 +113,6 @@ class ApiService {
         hasMore = false;
       }
     }
-    return allItems;
   }
 
   Future<List<Sticker>> getStickersByIds(List<int> ids) async {
