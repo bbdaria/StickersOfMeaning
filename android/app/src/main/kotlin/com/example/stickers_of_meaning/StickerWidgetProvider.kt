@@ -34,15 +34,16 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 val imagePath = widgetData.getString("sticker_image", null)
                 val showImage = widgetData.getBoolean("show_image", true)
 
-                // Font Size Logic
+                // Font Size Logic (Safe parsing)
                 val rawSize = widgetData.all["sticker_font_size"]
-                val fontSize = when (rawSize) {
-                    is String -> rawSize.toFloatOrNull() ?: 16.0f
-                    is Float -> rawSize
-                    is Long -> rawSize.toFloat()
-                    is Int -> rawSize.toFloat()
-                    is Double -> rawSize.toFloat()
-                    else -> 16.0f
+                val fontSize = try {
+                    when (rawSize) {
+                        is String -> rawSize.toFloatOrNull() ?: 16.0f
+                        is Number -> rawSize.toFloat()
+                        else -> 16.0f
+                    }
+                } catch (e: Exception) {
+                    16.0f
                 }
 
                 // 3. Set Text & Font Size
@@ -68,19 +69,19 @@ class StickerWidgetProvider : HomeWidgetProvider() {
 
                 // 5. Apply Visibility & Colors
                 if (imageShown) {
-                    // MODE A: IMAGE ONLY
+                    // MODE A: BACKGROUND IMAGE ONLY
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
                     setViewVisibility(R.id.text_container, View.GONE)
+
+                    // Set transparent background to let image shape show
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // MODE B: TEXT + LOGO
+                    // MODE B: TEXT + SMALL LOGO
                     setViewVisibility(R.id.widget_image, View.GONE)
                     setViewVisibility(R.id.text_container, View.VISIBLE)
 
                     // White Background
                     setInt(R.id.widget_root, "setBackgroundColor", Color.WHITE)
-
-                    // Set Text Color to Blue (#1E3A8A)
                     setTextColor(R.id.widget_text, Color.parseColor("#1E3A8A"))
                 }
             }
