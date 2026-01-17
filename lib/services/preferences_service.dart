@@ -57,15 +57,21 @@ class PreferencesService extends ChangeNotifier {
       try {
         final List<dynamic> decoded = jsonDecode(jsonString);
         _cachedPool = decoded.map((e) {
-          // Robustly reconstruct the path
+
+          // RECONSTRUCTION LOGIC
           if (e['localImagePath'] != null && _appPath.isNotEmpty) {
             final String rawPath = e['localImagePath'].toString();
-            // Split by BOTH '/' and '\' to safely get the filename on any OS
+
+            // 1. Extract Filename safely (handles / and \)
             final String fileName = rawPath.split(RegExp(r'[/\\]')).last;
 
-            // Rebuild valid full path
-            e['localImagePath'] = '$_appPath/$fileName';
+            // 2. Rebuild valid path for CURRENT device
+            e['localImagePath'] = '$_appPath${Platform.pathSeparator}$fileName';
+
+            // Debug check (Optional)
+            // print('Restored path: ${e['localImagePath']}');
           }
+
           return Sticker.fromJson(e);
         }).toList();
       } catch (e) {
@@ -196,13 +202,13 @@ class PreferencesService extends ChangeNotifier {
   }
 
   Future<void> _savePoolToDisk() async {
-    // Robust Saver: Strip everything except the filename
     final jsonList = _cachedPool.map((s) {
       final json = s.toJson();
 
+      // STRIPPING LOGIC
       if (json['localImagePath'] != null) {
         final String fullPath = json['localImagePath'].toString();
-        // Robust split to ensure we get just the name
+        // Extract just the filename to save
         final String fileName = fullPath.split(RegExp(r'[/\\]')).last;
         json['localImagePath'] = fileName;
       }

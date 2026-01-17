@@ -128,25 +128,33 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
               itemBuilder: (context, index) {
                 final sticker = _filteredPool[index];
 
-                // Smart Image Loading (Local -> Network)
+                // 1. Determine the Image Source (Local File vs Network)
                 ImageProvider? imageProvider;
+
+                // A. Try Local File
                 if (sticker.localImagePath != null) {
                   final file = File(sticker.localImagePath!);
                   if (file.existsSync()) {
                     imageProvider = FileImage(file);
                   }
                 }
-                imageProvider ??= NetworkImage(sticker.imageUrl);
+
+                // B. Fallback to Network (only if valid)
+                if (imageProvider == null && sticker.imageUrl.isNotEmpty) {
+                  imageProvider = NetworkImage(sticker.imageUrl);
+                }
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-                    leading: sticker.imageUrl.isNotEmpty
+                    contentPadding: const EdgeInsets.all(8),
+
+                    // 2. THE FIX: Check 'imageProvider' instead of 'imageUrl' string
+                    leading: imageProvider != null
                         ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image(
-                        image: imageProvider,
+                        image: imageProvider, // Use the provider we found
                         width: 60,
                         height: 60,
                         fit: BoxFit.contain,
@@ -154,11 +162,11 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                       ),
                     )
                         : const Icon(Icons.sticky_note_2, size: 40),
-                    title: Text(sticker.heQuote, maxLines: 1, overflow: TextOverflow.ellipsis, textDirection: TextDirection.rtl),
+
+                    title: Text(sticker.text, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(
-                        sticker.nameInHebrew.isNotEmpty ? sticker.nameInHebrew : sticker.content,
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                        textDirection: TextDirection.rtl
+                        sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.content,
+                        maxLines: 1, overflow: TextOverflow.ellipsis
                     ),
                     trailing: PopupMenuButton(
                       itemBuilder: (context) => [

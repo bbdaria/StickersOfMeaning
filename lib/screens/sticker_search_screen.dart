@@ -261,7 +261,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Sticker saved to collection'),
-                            duration: const Duration(seconds: 750),
+                            duration: const Duration(milliseconds: 750),
                             action: SnackBarAction(
                               label: 'View',
                               onPressed: () {
