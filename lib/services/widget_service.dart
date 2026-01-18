@@ -38,9 +38,10 @@ class WidgetService {
     final int textColor = prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
     final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
     final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
+    final int safeTextColor = Color(textColor).value.toSigned(32);
+    final int safeBgColor = Color(rawBgColor).withOpacity(opacity).value.toSigned(32);
 
     final String language = prefs.getString('app_language') ?? 'en';
-    final int finalBgColor = Color(rawBgColor).withOpacity(opacity).value;
 
     final quoteHe = prefs.getString('latest_sticker_quote_he');
     final quoteEn = prefs.getString('latest_sticker_quote_en');
@@ -71,11 +72,8 @@ class WidgetService {
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
     await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
-    await HomeWidget.saveWidgetData<bool>('show_image', showImage);
-    await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
-    await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
-    await HomeWidget.saveWidgetData<int>('sticker_text_color', textColor);
-    await HomeWidget.saveWidgetData<int>('sticker_bg_color', finalBgColor);
+    await HomeWidget.saveWidgetData<int>('sticker_text_color', safeTextColor);
+    await HomeWidget.saveWidgetData<int>('sticker_bg_color', safeBgColor);
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,
@@ -101,6 +99,9 @@ class WidgetService {
     final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
     final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
 
+    final int safeTextColor = Color(textColor).value.toSigned(32);
+    final int safeBgColor = Color(rawBgColor).withOpacity(opacity).value.toSigned(32);
+
     final int finalBgColor = Color(rawBgColor).withOpacity(opacity).value;
     if (sticker.imageUrl.isNotEmpty) {
       try {
@@ -123,8 +124,8 @@ class WidgetService {
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_image', localImagePath);
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
-    await HomeWidget.saveWidgetData<int>('sticker_text_color', textColor);
-    await HomeWidget.saveWidgetData<int>('sticker_bg_color', finalBgColor);
+    await HomeWidget.saveWidgetData<int>('sticker_text_color', safeTextColor);
+    await HomeWidget.saveWidgetData<int>('sticker_bg_color', safeBgColor);
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,

@@ -119,7 +119,12 @@ class PreferencesService extends ChangeNotifier {
       'remove': "Remove",
       'tooltip_save_collection': "Save to collection",
       'tooltip_remove_collection': "Remove from collection",
-      'collection_empty': "Collection empty. Switched widget to Web source."
+      'collection_empty': "Collection empty. Switched widget to Web source.",
+      'text_color': "Text Color",
+      'background_color': "Background Color",
+      'preview': "Preview",
+      'widget_preview': "Widget Preview",
+      'background_opacity': "Background Opacity",
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -178,7 +183,12 @@ class PreferencesService extends ChangeNotifier {
       'remove': "הסר",
       'tooltip_save_collection': "הוסף לאוסף",
       'tooltip_remove_collection': "הסר מהאוסף",
-      'collection_empty': "האוסף שלך ריק. המדבקות תלקחנה מהאתר."
+      'collection_empty': "האוסף שלך ריק. המדבקות תלקחנה מהאתר.",
+      'text_color': "צבע הטקסט",
+      'background_color': "צבע הרקע",
+      'preview': "תצוגת דמה",
+      'widget_preview': "הדמיית המדבקה",
+      'background_opacity': "שקיפות הרקע",
     }
   };
 

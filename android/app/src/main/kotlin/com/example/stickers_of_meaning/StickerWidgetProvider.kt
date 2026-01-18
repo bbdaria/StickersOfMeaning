@@ -33,10 +33,25 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 val textToShow = widgetData.getString("sticker_text", "Open App to Load") ?: "No Text"
                 val imagePath = widgetData.getString("sticker_image", null)
                 val showImage = widgetData.getBoolean("show_image", true)
-                val textColor = widgetData.getInt("sticker_text_color", Color.parseColor("#1E3A8A"))
-                val bgColor = widgetData.getInt("sticker_bg_color", Color.WHITE)
 
-                // Font Size Logic (Safe parsing)
+                // --- ROBUST COLOR READING START ---
+                // Try reading as Int, if it fails (due to large Long values), read as Long and cast
+                val defaultTextColor = Color.parseColor("#1E3A8A")
+                val textColor = try {
+                    widgetData.getInt("sticker_text_color", defaultTextColor)
+                } catch (e: Exception) {
+                    widgetData.getLong("sticker_text_color", defaultTextColor.toLong()).toInt()
+                }
+
+                val defaultBgColor = Color.WHITE
+                val bgColor = try {
+                    widgetData.getInt("sticker_bg_color", defaultBgColor)
+                } catch (e: Exception) {
+                    widgetData.getLong("sticker_bg_color", defaultBgColor.toLong()).toInt()
+                }
+                // --- ROBUST COLOR READING END ---
+
+                // Font Size Logic
                 val rawSize = widgetData.all["sticker_font_size"]
                 val fontSize = try {
                     when (rawSize) {
@@ -75,14 +90,14 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
                     setViewVisibility(R.id.text_container, View.GONE)
 
-                    // Set transparent background to let image shape show
+                    // Transparent background so image shape shows
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // MODE B: TEXT + SMALL LOGO
+                    // MODE B: TEXT + CUSTOM COLORS
                     setViewVisibility(R.id.widget_image, View.GONE)
                     setViewVisibility(R.id.text_container, View.VISIBLE)
 
-                    // White Background
+                    // Apply user selected colors
                     setInt(R.id.widget_root, "setBackgroundColor", bgColor)
                     setTextColor(R.id.widget_text, textColor)
                 }
