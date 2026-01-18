@@ -53,7 +53,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Widget Settings')),
+      appBar: AppBar(title: const Text('Widget customization')),
       body: ListView(
         children: [
           // 1. Show Image Toggle

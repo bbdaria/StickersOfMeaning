@@ -173,7 +173,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'widget',
-                          child: Row(children: [Icon(Icons.arrow_back, size: 20, color: Colors.blue), SizedBox(width: 8), Text('Set as Widget')]),
+                          child: Row(children: [Icon(Icons.send, size: 20, color: Colors.blue), SizedBox(width: 8), Text('Set as Widget')]),
                         ),
                         const PopupMenuItem(
                           value: 'remove',

@@ -304,7 +304,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.bookmark_border, size: 20),
-                      label: const Text('Save to Pool'),
+                      label: const Text('Add to Collection'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1E3A8A),
                         side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),

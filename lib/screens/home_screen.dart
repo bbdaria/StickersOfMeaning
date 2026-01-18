@@ -564,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: const Color(0xFF1E3A8A),
                                 size: 30,
                               ),
-                              tooltip: isSaved ? 'Remove from Pool' : 'Save to Pool',
+                              tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
                               onPressed: () async {
                                 if (isSaved) {
                                   // --- UPDATED: Use Safe Remove ---
@@ -574,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   await prefs.addToPool(sticker);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Saved to pool!'), duration: Duration(milliseconds: 750)),
+                                      const SnackBar(content: Text('Saved to collection!'), duration: Duration(milliseconds: 750)),
                                     );
                                   }
                                 }

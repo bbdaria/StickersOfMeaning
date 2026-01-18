@@ -81,7 +81,7 @@ class PreferencesService extends ChangeNotifier {
           return Sticker.fromJson(e);
         }).toList();
       } catch (e) {
-        debugPrint('Error parsing pool: $e');
+        debugPrint('Error parsing collection: $e');
         _cachedPool = [];
       }
     }

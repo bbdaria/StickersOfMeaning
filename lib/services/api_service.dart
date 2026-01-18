@@ -325,7 +325,7 @@ class ApiService {
       // Standard removal (not affecting widget)
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Removed from pool'), duration: Duration(seconds: 1)),
+          const SnackBar(content: Text('Removed from collection'), duration: Duration(seconds: 1)),
         );
       }
     }
