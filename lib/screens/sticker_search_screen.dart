@@ -258,10 +258,13 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ),
               ),
             ),
+
+            // --- Buttons Section ---
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(
                 children: [
+                  // A. Reactive Bookmark Button
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.bookmark_border, size: 20),
@@ -277,16 +280,17 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                       onPressed: () async {
                         await context.read<PreferencesService>().addToPool(sticker);
                         if (!mounted) return;
-                        Navigator.pop(ctx);
-                        // Removed Success Snackbar
                       },
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
+                  // B. Set as Widget Button
                   Expanded(
                     child: OutlinedButton.icon(
-                      icon: const Icon(Icons.widgets, size: 20),
-                      label: Text(prefs.getLabel('set_as_widget')),
+                      icon: const Icon(Icons.send, size: 20),
+                      label: const Text('Set as Widget', style: TextStyle(fontSize: 13)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1E3A8A),
                         side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
@@ -296,7 +300,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         ),
                       ),
                       onPressed: () async {
-                        Navigator.pop(ctx);
                         await context.read<WidgetService>().updateStickerWidget(sticker);
                         // Removed Success Snackbar
                       },
