@@ -14,7 +14,7 @@ class WidgetSettingsScreen extends StatefulWidget {
 
 class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   bool _showImage = true;
-  double _fontSize = 16.0; // Default
+  double _fontSize = 16.0;
 
   @override
   void initState() {
@@ -42,9 +42,9 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
     if (mounted) {
       await context.read<WidgetService>().refreshWidgetSettings();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Widget updated!'),
-          duration: Duration(milliseconds: 750),
+        SnackBar(
+          content: Text(prefs.getLabel('widget_updated')),
+          duration: const Duration(milliseconds: 750),
         ),
       );
     }
@@ -52,14 +52,22 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefs = context.watch<PreferencesService>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Widget customization')),
+      // --- FIX: Force LTR on AppBar ---
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppBar(title: Text(prefs.getLabel('widget_customization'))),
+        ),
+      ),
+      // --------------------------------
       body: ListView(
         children: [
-          // 1. Show Image Toggle
           SwitchListTile(
-            title: const Text('Show Image in Widget'),
-            subtitle: const Text('If disabled, only the sticker text will be shown.'),
+            title: Text(prefs.getLabel('show_image_widget')),
+            subtitle: Text(prefs.getLabel('show_image_desc')),
             value: _showImage,
             onChanged: (bool value) {
               setState(() => _showImage = value);
@@ -67,11 +75,10 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
             },
           ),
           const Divider(),
-          // 2. Font Size Slider (Only visible if Image is OFF)
           ListTile(
-            title: const Text('Widget Font Size'),
+            title: Text(prefs.getLabel('widget_font_size')),
             subtitle: Text('${_fontSize.toInt()} sp'),
-            enabled: !_showImage, // Disable if image is ON (since text is hidden anyway)
+            enabled: !_showImage,
           ),
           Slider(
             value: _fontSize,
@@ -83,15 +90,15 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
                 ? (value) {
               setState(() => _fontSize = value);
             }
-                : null, // Disable slider if showing image
+                : null,
             onChangeEnd: (value) {
-              _saveSettings(); // Only save/update when user releases the slider
+              _saveSettings();
             },
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "Preview Text Size",
+              prefs.getLabel('preview_text_size'),
               style: TextStyle(fontSize: _fontSize),
             ),
           ),

@@ -28,11 +28,11 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
     _futureSticker = api.getDailySticker(prefs, widgetService);
   }
 
-  // UPDATED: Now accepts the specific URL to open
   Future<void> _openSite(String url) async {
+    final prefs = context.read<PreferencesService>();
     if (url.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No link available for this sticker'), duration: Duration(milliseconds: 750)),
+        SnackBar(content: Text(prefs.getLabel('no_link_available')), duration: const Duration(milliseconds: 750)),
       );
       return;
     }
@@ -43,17 +43,27 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open site')),
+        SnackBar(content: Text(prefs.getLabel('could_not_open_site'))),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final prefs = context.watch<PreferencesService>();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Today's Sticker"),
+      // --- FIX: Force LTR on AppBar ---
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppBar(
+            title: Text(prefs.getLabel('todays_sticker')),
+          ),
+        ),
       ),
+      // --------------------------------
       body: FutureBuilder<Sticker>(
         future: _futureSticker,
         builder: (context, snapshot) {
@@ -63,12 +73,12 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
             return Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Error loading today\'s sticker: ${snapshot.error}',
+                '${prefs.getLabel('error_loading')}: ${snapshot.error}',
                 style: const TextStyle(color: Colors.red),
               ),
             );
           } else if (!snapshot.hasData) {
-            return const Center(child: Text('No sticker available'));
+            return Center(child: Text(prefs.getLabel('no_sticker_available')));
           }
 
           final sticker = snapshot.data!;
@@ -80,8 +90,8 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     sticker.imageUrl,
-                    width: double.infinity, // Fill the width of the screen
-                    fit: BoxFit.fitWidth,   // Scale height to match aspect ratio (no cutting)
+                    width: double.infinity,
+                    fit: BoxFit.fitWidth,
                     errorBuilder: (context, error, stackTrace) =>
                     const SizedBox(
                       height: 200,
@@ -97,12 +107,10 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
               ),
               const SizedBox(height: 24),
 
-              // UPDATED BUTTON
               ElevatedButton.icon(
-                // Pass the sticker's specific URL to the function
                 onPressed: () => _openSite(sticker.postUrl),
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Open full post on site'),
+                label: Text(prefs.getLabel('open_full_post')),
               ),
             ],
           );

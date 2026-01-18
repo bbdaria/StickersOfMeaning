@@ -36,13 +36,13 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
     }
   }
 
-  // --- NEW: Updates ONLY the widget, not the Home Screen ---
   Future<void> _updateWidgetOnly() async {
+    final prefs = context.read<PreferencesService>();
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Updating widget...'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(prefs.getLabel('updating_widget')),
+        duration: const Duration(seconds: 1),
       ),
     );
 
@@ -53,13 +53,13 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Widget updated!')),
+          SnackBar(content: Text(prefs.getLabel('widget_updated'))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Update failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${prefs.getLabel('update_failed')}: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -67,8 +67,19 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // קבלת שירות ההגדרות לטובת תרגום
+    final prefs = context.watch<PreferencesService>();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Content Preferences')),
+      // --- תיקון: אילוץ LTR ב-AppBar כדי שכפתור החזרה יישאר בצד שמאל ---
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppBar(title: Text(prefs.getLabel('content_preferences'))),
+        ),
+      ),
+      // ----------------------------------------------------------------
       body: Consumer<PreferencesService>(
         builder: (context, prefs, child) {
           final pool = prefs.getStickerPool();
@@ -86,27 +97,27 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Text(
-                'Widget Source',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                prefs.getLabel('widget_source'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Where should the home screen widget get its sticker from?',
-                style: TextStyle(color: Colors.grey),
+              Text(
+                prefs.getLabel('widget_source_desc'),
+                style: const TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 16),
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: 'web',
-                    label: Text('From Web'),
-                    icon: Icon(Icons.public),
+                    label: Text(prefs.getLabel('from_web')),
+                    icon: const Icon(Icons.public),
                   ),
                   ButtonSegment(
                     value: 'pool',
-                    label: Text('My Collection'),
-                    icon: Icon(Icons.collections_bookmark),
+                    label: Text(prefs.getLabel('from_collection')),
+                    icon: const Icon(Icons.collections_bookmark),
                   ),
                 ],
                 selected: {prefs.stickerSource},
@@ -115,10 +126,10 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   if (newValue != prefs.stickerSource) {
                     await prefs.setDailyFilterCategories([]);
                     await prefs.setStickerSource(newValue);
-                    _updateWidgetOnly(); // Trigger widget update
+                    _updateWidgetOnly(); // עדכון הווידג'ט בשינוי מקור
                   }
                 },
-                style: ButtonStyle(
+                style: const ButtonStyle(
                   visualDensity: VisualDensity.comfortable,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -139,7 +150,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your collection is empty! The sticker will be taken from the Web until you add some stickers.',
+                          prefs.getLabel('empty_collection_warning'),
                           style: TextStyle(color: Colors.orange[800], fontSize: 13),
                         ),
                       ),
@@ -152,9 +163,9 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Filter Stickers by Meaning',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    prefs.getLabel('filter_stickers_title'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   if (currentFilters.isNotEmpty)
                     TextButton(
@@ -162,7 +173,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                         await prefs.setDailyFilterCategories([]);
                         _updateWidgetOnly();
                       },
-                      child: const Text('Clear All'),
+                      child: Text(prefs.getLabel('clear_all')),
                     ),
                 ],
               ),
@@ -176,8 +187,8 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   child: Center(
                     child: Text(
                       isPoolSource
-                          ? 'No categorized stickers in your collection.'
-                          : 'No categories available.',
+                          ? prefs.getLabel('no_categorized_stickers')
+                          : prefs.getLabel('no_categories_available'),
                       style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                     ),
                   ),
@@ -203,7 +214,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                           newFilters.remove(entry.key);
                         }
                         await prefs.setDailyFilterCategories(newFilters);
-                        _updateWidgetOnly(); // Trigger widget update
+                        _updateWidgetOnly(); // עדכון הווידג'ט בשינוי פילטר
                       },
                     );
                   }).toList(),
@@ -214,7 +225,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               const SizedBox(height: 24),
 
               ListTile(
-                title: const Text('Refresh widget'),
+                title: Text(prefs.getLabel('refresh_widget')),
                 leading: const Icon(Icons.refresh, color: Color(0xFF1E3A8A)),
                 shape: RoundedRectangleBorder(
                   side: BorderSide(color: Colors.grey.shade300),

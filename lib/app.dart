@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+// If flutter_localizations is not in pubspec, these imports might fail.
+// Standard Flutter projects usually have them. If not, the Locale('he') will still trigger basic RTL.
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/preferences_screen.dart';
@@ -8,7 +12,7 @@ import 'screens/daily_sticker_settings_screen.dart';
 import 'screens/widget_settings_screen.dart';
 import 'screens/sticker_pool_screen.dart';
 import 'widgets/connectivity_wrapper.dart';
-
+import 'services/preferences_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -17,40 +21,46 @@ class StickersApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Watch preferences to update locale when language changes
+    final prefs = context.watch<PreferencesService>();
+
     return MaterialApp(
-      title: 'Stickers of meaning',
+      // Dynamic Title
+      title: prefs.getLabel('app_title'),
+
+      // Locale Setup
+      locale: Locale(prefs.language),
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('he', ''),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
       theme: ThemeData(
-        // 1. Force the background to be pure white
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
-
-        // 2. Remove the "Orange/Blue" Tint from all Colors
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2596be),
-          surface: Colors.white, // Force surface to be white
-          surfaceTint: Colors.transparent, // CRITICAL: Removes the overlay tint
+          surface: Colors.white,
+          surfaceTint: Colors.transparent,
         ),
-
-        // 3. Fix the Daily Sticker & Menu Cards (Force White)
-        // UPDATED: Changed 'CardTheme' to 'CardThemeData' to fix the error
         cardTheme: const CardThemeData(
           color: Colors.white,
-          surfaceTintColor: Colors.transparent, // No color overlay
-          elevation: 2, // Keeps a small shadow for depth
+          surfaceTintColor: Colors.transparent,
+          elevation: 2,
         ),
-
-        // 4. Fix Filter Chips (Search Screen) - "Off" state becomes light gray
         chipTheme: ChipThemeData(
-          backgroundColor: Colors.grey[200], // Neutral Light Gray when unselected
-          selectedColor: const Color(0xFF1E3A8A), // Blue when selected
+          backgroundColor: Colors.grey[200],
+          selectedColor: const Color(0xFF1E3A8A),
           disabledColor: Colors.grey[300],
           surfaceTintColor: Colors.transparent,
-          // Text color logic
           labelStyle: const TextStyle(color: Colors.black),
           secondaryLabelStyle: const TextStyle(color: Colors.white),
         ),
-
-        // Global AppBar theme
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.white,
@@ -58,25 +68,20 @@ class StickersApp extends StatelessWidget {
           actionsIconTheme: IconThemeData(color: Colors.black),
           elevation: 0,
         ),
-
-        // Global Search / Input Theme
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white, // Pure white background
-          hintStyle: const TextStyle(color: Color(0xFF8A8A8A)), // Neutral gray placeholder
-          prefixIconColor: const Color(0xFF0B2A6F), // Matching navy icon
+          fillColor: Colors.white,
+          hintStyle: const TextStyle(color: Color(0xFF8A8A8A)),
+          prefixIconColor: const Color(0xFF0B2A6F),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          // Default Border (Navy Blue #0B2A6F)
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
           ),
-          // Enabled Border (When not clicked)
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
           ),
-          // Focused Border (When typing)
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: Color(0xFF0B2A6F), width: 2),

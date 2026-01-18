@@ -5,7 +5,6 @@ import 'package:stickers_of_meaning/screens/sticker_pool_screen.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
-import '../widgets/gradient_button.dart';
 import 'package:html/parser.dart' show parse;
 import '../services/preferences_service.dart';
 
@@ -19,23 +18,19 @@ class StickerSearchScreen extends StatefulWidget {
 }
 
 class _StickerSearchScreenState extends State<StickerSearchScreen> {
-  // -- UI Controllers --
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // -- Data Source (The "Index") --
   List<StickerIndexItem> _searchIndex = [];
   Map<int, String> _availableCategories = {};
   bool _isIndexLoading = true;
 
-  // -- Filter State --
   final Set<int> _selectedCategories = {};
 
-  // -- Results State --
-  List<int> _filteredIds = []; // All potential matches (just IDs)
-  List<Sticker> _displayedStickers = []; // Full stickers loaded so far
+  List<int> _filteredIds = [];
+  List<Sticker> _displayedStickers = [];
   bool _isLoadingMore = false;
-  bool _hasSearched = false; // To distinguish "start" vs "no results"
+  bool _hasSearched = false;
 
   @override
   void initState() {
@@ -52,7 +47,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   void _onScroll() {
-    // If scrolled to bottom (threshold 200px), load more
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _loadMoreStickers();
     }
@@ -61,18 +55,14 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   Future<void> _loadIndexInBackground() async {
     final api = context.read<ApiService>();
     try {
-      // 1. Fetch Categories
       final cats = await api.fetchCategories();
       if (mounted) setState(() => _availableCategories = cats);
 
-      // 2. Fetch Index with Incremental Updates
       await api.fetchStickerIndex(
         onBatchLoaded: (newBatch) {
           if (!mounted) return;
           setState(() {
             _searchIndex.addAll(newBatch);
-
-            // If the user already has a filter active, update results live
             if (_controller.text.isNotEmpty || _selectedCategories.isNotEmpty) {
               _applyFilter();
             }
@@ -86,11 +76,9 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     }
   }
 
-  // --- CORE LOGIC: Filter Index -> Get IDs ---
   void _applyFilter() {
     final query = _controller.text.trim().toLowerCase();
 
-    // 1. Reset if empty
     if (query.isEmpty && _selectedCategories.isEmpty) {
       setState(() {
         _filteredIds = [];
@@ -102,17 +90,13 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
     setState(() {
       _hasSearched = true;
-
-      // 2. Find matching IDs from local index
       _filteredIds = _searchIndex.where((item) {
-        // Category Match
         if (_selectedCategories.isNotEmpty) {
           if (item.categoryIds.isEmpty) return false;
           bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
           if (!hasCategory) return false;
         }
 
-        // Text Match
         if (query.isNotEmpty) {
           bool nameMatch =
               item.hebrewName.toLowerCase().contains(query) ||
@@ -123,33 +107,25 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       }).map((item) => item.id).toList();
     });
 
-    // 3. Reset displayed list and load first batch
-    // IMPORTANT: Only clear if we are starting a fresh search logic,
-    // but here we simply re-fetch to ensure consistency.
     _displayedStickers.clear();
 
     if (_filteredIds.isNotEmpty) {
       _loadMoreStickers();
     } else {
-      // Safety Net: Fallback to Server if local index found nothing
       _fetchServerFallback();
     }
   }
 
-  // --- BATCH LOADER ---
   Future<void> _loadMoreStickers() async {
     if (_isLoadingMore) return;
-    // Stop if we have displayed everything
     if (_displayedStickers.length >= _filteredIds.length) return;
 
     setState(() => _isLoadingMore = true);
 
     try {
       final api = context.read<ApiService>();
-
-      // Calculate next batch
       final startIndex = _displayedStickers.length;
-      final count = 20; // Load 20 at a time
+      final count = 20;
       final idsToLoad = _filteredIds.skip(startIndex).take(count).toList();
 
       if (idsToLoad.isNotEmpty) {
@@ -167,7 +143,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     }
   }
 
-  // --- FALLBACK: Direct API Search ---
   Future<void> _fetchServerFallback() async {
     setState(() => _isLoadingMore = true);
     try {
@@ -179,8 +154,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       if (mounted) {
         setState(() {
           _displayedStickers = results;
-          // We can't really pagination easily here without complex state,
-          // so we just show the first page from server.
         });
       }
     } catch (e) {
@@ -191,12 +164,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   void _showStickerDetails(Sticker sticker) {
-    // 1. Get current language preference
-    final language = context.read<PreferencesService>().language;
+    final prefs = context.read<PreferencesService>();
+    final language = prefs.language;
     final isEnglish = language == 'en';
 
-    // 2. Prepare Data based on Language
-    // We use fallbacks so the dialog isn't empty if a translation is missing
     String displayQuote = isEnglish
         ? (sticker.enQuote.isNotEmpty ? sticker.enQuote : sticker.content)
         : sticker.content;
@@ -205,7 +176,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
         ? (sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.text)
         : sticker.text;
 
-    // Clean HTML tags from the quote just in case
     displayQuote = parse(displayQuote).body?.text ?? displayQuote;
 
     showDialog(
@@ -217,7 +187,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- Image Section (Unchanged) ---
             Stack(
               children: [
                 if (sticker.imageUrl.isNotEmpty)
@@ -257,14 +226,11 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ),
               ],
             ),
-
-            // --- Text Section (Dynamic Language) ---
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
-                    // 1. The Quote
                     if (displayQuote.isNotEmpty) ...[
                       Text(
                         '"$displayQuote"',
@@ -274,13 +240,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           color: Colors.black87,
                         ),
                         textAlign: TextAlign.center,
-                        // RTL for Hebrew, LTR for English
                         textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
                       ),
                       const SizedBox(height: 12),
                     ],
-
-                    // 2. The Name
                     Text(
                       displayName,
                       style: const TextStyle(
@@ -295,16 +258,14 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ),
               ),
             ),
-            // 3. Bottom Section: Buttons Side-by-Side
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(
                 children: [
-                  // A. Save to Pool Button
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.bookmark_border, size: 20),
-                      label: const Text('Add to Collection'),
+                      label: Text(prefs.getLabel('add_to_collection')),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1E3A8A),
                         side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
@@ -319,10 +280,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Sticker saved to collection'),
-                            duration: const Duration(seconds: 750),
+                            content: Text(prefs.getLabel('saved_to_collection')),
+                            duration: const Duration(seconds: 1),
                             action: SnackBarAction(
-                              label: 'View',
+                              label: prefs.getLabel('view'),
                               onPressed: () => Navigator.pushNamed(context, StickerPoolScreen.routeName),
                             ),
                           ),
@@ -330,13 +291,11 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                       },
                     ),
                   ),
-
-                  const SizedBox(width: 12), // Gap between buttons
-
+                  const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.widgets, size: 20),
-                      label: const Text('Set as Widget'),
+                      label: Text(prefs.getLabel('set_as_widget')),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF1E3A8A),
                         side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
@@ -350,7 +309,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         await context.read<WidgetService>().updateStickerWidget(sticker);
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Widget updated successfully!'), duration: Duration(milliseconds: 750)),
+                          SnackBar(content: Text(prefs.getLabel('widget_updated_success')), duration: const Duration(milliseconds: 750)),
                         );
                       },
                     ),
@@ -364,7 +323,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     );
   }
 
-  // Helper for Gradient Chips
   Widget _buildGradientChip(String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -401,8 +359,19 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefs = context.watch<PreferencesService>();
+    final isEnglish = prefs.language == 'en';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Sticker Search')),
+      // --- FIX: Force LTR on AppBar ---
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppBar(title: Text(prefs.getLabel('sticker_search'))),
+        ),
+      ),
+      // --------------------------------
       body: Column(
         children: [
           Material(
@@ -417,10 +386,12 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         child: TextField(
                           controller: _controller,
                           textInputAction: TextInputAction.search,
+                          // Adjust text direction for input
+                          textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
                           onChanged: (_) => _applyFilter(),
                           decoration: InputDecoration(
-                            labelText: 'Search...',
-                            hintText: 'Type to search...',
+                            labelText: prefs.getLabel('search_hint'),
+                            hintText: prefs.getLabel('type_to_search'),
                             hintStyle: const TextStyle(
                                 color: Color(0xFF8A8A8A)),
                             prefixIcon: const Icon(
@@ -468,12 +439,9 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 ),
 
                 ExpansionTile(
-                  title: const Text("Filters (Topics & Options)"),
+                  title: Text(prefs.getLabel('filters')),
                   children: [
-                    // --- FIX IS APPLIED HERE ---
                     ConstrainedBox(
-                      // Limit the height of the expanded area to 300 pixels
-                      // This prevents it from taking up the entire screen and overflowing
                       constraints: const BoxConstraints(maxHeight: 300),
                       child: SingleChildScrollView(
                         child: Padding(
@@ -481,28 +449,8 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // const Text("Search in:", style: TextStyle(
-                              //     fontWeight: FontWeight.bold)),
-                              // const SizedBox(height: 8),
-                              // Row(
-                              //   children: [
-                              //     _buildGradientChip(
-                              //         "Name (Title)", _searchInTitle, () =>
-                              //         setState(() =>
-                              //         _searchInTitle = !_searchInTitle)),
-                              //     const SizedBox(width: 8),
-                              //     _buildGradientChip("Meaning (Content)",
-                              //         _searchInContent, () =>
-                              //             setState(() =>
-                              //             _searchInContent = !_searchInContent)),
-                              //   ],
-                              // ),
-                              // const SizedBox(height: 16),
-                              // const Text("Topics:", style: TextStyle(
-                              //     fontWeight: FontWeight.bold)),
-                              // const SizedBox(height: 8),
                               _availableCategories.isEmpty
-                                  ? const Text("Loading topics...")
+                                  ? Text(prefs.getLabel('loading_topics'))
                                   : Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
@@ -550,12 +498,12 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     final isEnglish = prefs.language == 'en';
 
     if (!_hasSearched) {
-      return const Center(child: Text('Type or select a category to start searching.'));
+      return Center(child: Text(prefs.getLabel('start_search_instruction')));
     }
 
     if (_displayedStickers.isEmpty) {
       if (_isLoadingMore) return const Center(child: CircularProgressIndicator());
-      return const Center(child: Text('No stickers found.'));
+      return Center(child: Text(prefs.getLabel('no_stickers_found')));
     }
 
     return ListView.separated(
@@ -579,18 +527,15 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
         } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
           displayName = sticker.nameInHebrew;
         } else {
-          // Fallback to the default "text" (Usually Hebrew Title)
           displayName = sticker.text;
         }
 
-        // 3. Determine Display Quote (Subtitle)
         String displayQuote;
         if (isEnglish && sticker.enQuote.isNotEmpty) {
           displayQuote = sticker.enQuote;
         } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
           displayQuote = sticker.heQuote;
         } else {
-          // Fallback to the default "content" (Usually Hebrew Quote)
           displayQuote = sticker.content;
         }
 
@@ -606,14 +551,12 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
           )
               : const Icon(Icons.sticky_note_2),
 
-          // PRIMARY TITLE (Hebrew)
           title: Text(
             displayName,
             textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
 
-          // SUBTITLE (English Name)
           subtitle: Text(
               parse(displayQuote).body?.text ?? '',
               textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,

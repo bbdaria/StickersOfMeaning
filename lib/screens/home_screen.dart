@@ -30,9 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadDailySticker();
-    // We do NOT call _loadWidgetStickerId() here anymore.
-    // It is now chained inside _loadDailySticker to ensure it runs AFTER
-    // the daily sticker logic (which might update the widget).
   }
 
   void _loadDailySticker() {
@@ -41,10 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final widgetService = context.read<WidgetService>();
 
     setState(() {
-      // Chain the Future:
-      // 1. Get Daily Sticker (updates widget if needed)
-      // 2. Then load the widget ID (guaranteed to see the update)
-      // 3. Return the sticker to the builder
       _futureSticker = api.getDailySticker(prefs, widgetService).then((sticker) async {
         await _loadWidgetStickerId();
         return sticker;
@@ -64,30 +57,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refreshSticker() async {
     _loadDailySticker();
-    // Wait for the full chain to complete so the spinner doesn't disappear too early
     try {
       if (_futureSticker != null) await _futureSticker;
-    } catch (e) {
-      // Errors are handled by the FutureBuilder UI
-    }
+    } catch (e) {}
   }
 
   Future<void> _sendToWidget(Sticker sticker) async {
     final widgetService = context.read<WidgetService>();
+    final prefs = context.read<PreferencesService>();
     await widgetService.updateStickerWidget(sticker);
     if (!mounted) return;
 
-    // Update local state immediately
     setState(() {
       _currentWidgetStickerId = sticker.id;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750)),
+      SnackBar(content: Text(prefs.getLabel('widget_updated')), duration: const Duration(milliseconds: 750)),
     );
   }
 
-  // Redesigned Menu Button (Compact White Card Style)
   Widget _buildMenuButton({
     required String title,
     required String subtitle,
@@ -117,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
-                // Icon with light blue background
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
@@ -163,13 +151,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openExternalUrl(BuildContext context, url) async {
+    final prefs = context.read<PreferencesService>();
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open site')),
+          SnackBar(content: Text(prefs.getLabel('could_not_open_site'))),
         );
       }
     }
@@ -177,36 +166,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to changes to update UI
+    final prefs = context.watch<PreferencesService>();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Light off-white background
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7FA),
-        leading: IconButton(
-          icon: const Icon(Icons.info_outline, size: 25),
-          tooltip: 'Visit Site',
-          onPressed: () => _openExternalUrl(context, 'https://stickersofmeaning.org/contact/'),
-        ),
-        elevation: 0,
-        title: SvgPicture.asset(
-          'assets/icons/Logo.svg',
-          height: 28,
-          fit: BoxFit.contain,
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black87, size: 25),
-            onPressed: () {
-              Navigator.pushNamed(context, PreferencesScreen.routeName);
-            },
+      backgroundColor: const Color(0xFFF5F7FA),
+      // Force LTR Directionality on the AppBar to keep buttons fixed
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: AppBar(
+            backgroundColor: const Color(0xFFF5F7FA),
+            leading: IconButton(
+              icon: const Icon(Icons.info_outline, size: 25),
+              tooltip: prefs.getLabel('visit_site'),
+              onPressed: () => _openExternalUrl(context, 'https://stickersofmeaning.org/contact/'),
+            ),
+            elevation: 0,
+            title: SvgPicture.asset(
+              'assets/icons/Logo.svg',
+              height: 28,
+              fit: BoxFit.contain,
+            ),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.black87, size: 25),
+                onPressed: () {
+                  Navigator.pushNamed(context, PreferencesScreen.routeName);
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, StickerSearchScreen.routeName);
         },
-        backgroundColor: const Color(0xFF1E3A8A), // Consistent App Blue
+        backgroundColor: const Color(0xFF1E3A8A),
         child: const Icon(Icons.search, color: Colors.white),
       ),
       body: RefreshIndicator(
@@ -214,9 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           children: [
-            const Text(
-              "Today's Sticker",
-              style: TextStyle(
+            Text(
+              prefs.getLabel('todays_sticker'),
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1E3A8A),
@@ -237,19 +236,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
-                      'Error loading sticker. Please check your connection.',
+                      'Error loading sticker.',
                       style: TextStyle(color: Colors.red),
                     ),
                   );
                 } else if (!snapshot.hasData) {
-                  return const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('No sticker available'),
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(prefs.getLabel('no_sticker_available')),
                   );
                 }
 
                 final sticker = snapshot.data!;
-                // Ensure check is against current state
                 final isAlreadyInWidget = _currentWidgetStickerId == sticker.id;
 
                 return Card(
@@ -261,7 +259,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Stack(
                     children: [
-                      // 1. Existing Content (Column)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -314,9 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                       ),
-                                      child: const Text(
-                                        'See Info',
-                                        style: TextStyle(
+                                      child: Text(
+                                        prefs.getLabel('see_info'),
+                                        style: const TextStyle(
                                           color: Color(0xFF1E3A8A),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -327,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(width: 10),
 
-                                // Send to Widget / Already in Widget Button
+                                // Send to Widget Button
                                 Expanded(
                                   child: isAlreadyInWidget
                                       ? SizedBox(
@@ -335,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: OutlinedButton(
                                       onPressed: () {
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Sticker is already in widget'), duration: Duration(milliseconds: 750))
+                                            SnackBar(content: Text(prefs.getLabel('sticker_in_widget')), duration: const Duration(milliseconds: 750))
                                         );
                                       },
                                       style: OutlinedButton.styleFrom(
@@ -345,10 +342,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                       ),
-                                      child: const Text(
-                                        'Sticker already in widget',
+                                      child: Text(
+                                        prefs.getLabel('sticker_in_widget'),
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Color(0xFF1E3A8A),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 11,
@@ -379,9 +376,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         padding: EdgeInsets.zero,
                                       ),
-                                      child: const Text(
-                                        'Send to Widget',
-                                        style: TextStyle(
+                                      child: Text(
+                                        prefs.getLabel('send_to_widget'),
+                                        style: const TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -395,8 +392,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-
-                      // 2. Floating Ribbon Button (Top Right)
                       Positioned(
                         top: 0,
                         right: 4,
@@ -409,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: const Color(0xFF1E3A8A),
                                 size: 30,
                               ),
-                              tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
+                              tooltip: 'Save/Remove',
                               onPressed: () async {
                                 if (isSaved) {
                                   await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
@@ -417,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   await prefs.addToPool(sticker);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Saved to collection!'), duration: Duration(milliseconds: 750)),
+                                      SnackBar(content: Text(prefs.getLabel('saved_to_collection')), duration: const Duration(milliseconds: 750)),
                                     );
                                   }
                                 }
@@ -434,32 +429,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 20),
             _buildMenuButton(
-              title: 'Your collection',
-              subtitle: 'Explore and add to the collection',
+              title: prefs.getLabel('your_collection'),
+              subtitle: prefs.getLabel('explore_collection'),
               icon: Icons.collections,
               onTap: () => Navigator.pushNamed(context, StickerPoolScreen.routeName).then((_) {
-                _loadWidgetStickerId(); // Refresh check when returning
+                _loadWidgetStickerId();
               }),
             ),
             _buildMenuButton(
-              title: 'Customize your widget',
-              subtitle: 'Settings and customization',
+              title: prefs.getLabel('customize_widget'),
+              subtitle: prefs.getLabel('settings_customization'),
               icon: Icons.color_lens,
               onTap: () => Navigator.pushNamed(context, WidgetSettingsScreen.routeName).then((_) {
-                _loadWidgetStickerId(); // Refresh check when returning
+                _loadWidgetStickerId();
               }),
             ),
             _buildMenuButton(
-              title: 'Content preferences',
-              subtitle: 'What would you like to see?',
+              title: prefs.getLabel('content_preferences'),
+              subtitle: prefs.getLabel('what_to_see'),
               icon: Icons.widgets,
               onTap: () => Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName).then((_) {
-                _loadWidgetStickerId(); // Refresh check when returning
+                _loadWidgetStickerId();
               }),
             ),
             _buildMenuButton(
-              title: 'Visit our site',
-              subtitle: 'Sticker Of Meaning',
+              title: prefs.getLabel('visit_site'),
+              subtitle: prefs.getLabel('sticker_of_meaning'),
               icon: Icons.language,
               onTap: () => launchUrl(Uri.https('stickersofmeaning.org')),
             ),
