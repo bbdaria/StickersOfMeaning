@@ -295,15 +295,17 @@ class ApiService {
 
     // 3. Handle Edge Cases
     if (isWidgetTarget && isPoolMode) {
-      if (prefs.getStickerPool().isEmpty) {
+      if (prefs
+          .getStickerPool()
+          .isEmpty) {
         // Case: Pool is now empty -> Switch to Web & Refresh
         await prefs.setStickerSource('web');
         await updateWidgetContent(prefs, widgetService);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Collection empty. Switched widget to Web source.'),
+            SnackBar(
+              content: Text(prefs.getLabel('collection_empty')),
               duration: Duration(seconds: 4),
             ),
           );
@@ -320,13 +322,6 @@ class ApiService {
             ),
           );
         }
-      }
-    } else {
-      // Standard removal (not affecting widget)
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Removed from collection'), duration: Duration(seconds: 1)),
-        );
       }
     }
   }

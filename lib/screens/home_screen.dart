@@ -417,14 +417,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
                                   } else {
                                     await prefs.addToPool(sticker);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(prefs.getLabel('saved_to_collection')),
-                                            duration: const Duration(milliseconds: 750)
-                                        ),
-                                      );
-                                    }
                                   }
                                 },
                               ),

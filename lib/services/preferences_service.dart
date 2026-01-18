@@ -95,6 +95,7 @@ class PreferencesService extends ChangeNotifier {
       'start_search_instruction': "Type or select a category to start searching.",
       'no_stickers_found': "No stickers found.",
       'add_to_collection': "Add to Collection",
+      'already_in_collection': "In collection",
       'set_as_widget': "Set as Widget",
       // 'view': "View", // Removed
       // 'widget_updated_success': "Widget updated successfully!", // Removed
@@ -124,6 +125,7 @@ class PreferencesService extends ChangeNotifier {
       'remove': "Remove",
       'tooltip_save_collection': "Save to collection",
       'tooltip_remove_collection': "Remove from collection",
+      'collection_empty': "Collection empty. Switched widget to Web source."
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -162,6 +164,7 @@ class PreferencesService extends ChangeNotifier {
       'start_search_instruction': "הקלד או בחר קטגוריה כדי להתחיל לחפש.",
       'no_stickers_found': "לא נמצאו מדבקות.",
       'add_to_collection': "הוסף לאוסף המדבקות",
+      'already_in_collection': "המדבקה באוסף המדבקות",
       'set_as_widget': "הגדר כווידג'ט",
       // 'view': "הצג", // Removed
       // 'widget_updated_success': "הווידג'ט עודכן בהצלחה!", // Removed
@@ -191,6 +194,7 @@ class PreferencesService extends ChangeNotifier {
       'remove': "הסר",
       'tooltip_save_collection': "הוסף לאוסף",
       'tooltip_remove_collection': "הסר מהאוסף",
+      'collection_empty': "האוסף שלך ריק. המדבקות ילקחו מהאתר."
     }
   };
 
