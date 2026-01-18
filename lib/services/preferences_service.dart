@@ -163,8 +163,8 @@ class PreferencesService extends ChangeNotifier {
       'loading_topics': "טוען נושאים...",
       'start_search_instruction': "הקלד או בחר קטגוריה כדי להתחיל לחפש.",
       'no_stickers_found': "לא נמצאו מדבקות.",
-      'add_to_collection': "הוסף לאוסף המדבקות",
-      'already_in_collection': "המדבקה באוסף המדבקות",
+      'add_to_collection': "הוסף לאוסף",
+      'already_in_collection': "המדבקה באוסף",
       'set_as_widget': "הגדר כווידג'ט",
       // 'view': "הצג", // Removed
       // 'widget_updated_success': "הווידג'ט עודכן בהצלחה!", // Removed
