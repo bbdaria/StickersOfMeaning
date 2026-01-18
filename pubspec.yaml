@@ -105,7 +105,7 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/icons/launcher_icon.png"
+  image_path: "assets/icons/playstore.png"
   min_sdk_android: 21
   # (Optional) If you want adaptive icons for Android (Background color + Foreground Logo)
   # adaptive_icon_background: "#ffffff"
@@ -113,9 +113,9 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#ffffff"
-  image: "assets/icons/launcher_icon.png"
-  branding: "assets/icons/launcher_icon.png"
+  image: "assets/icons/playstore.png"
+  branding: "assets/icons/playstore.png"
   android_12:
-    image: "assets/icons/launcher_icon.png"
+    image: "assets/icons/playstore.png"
     color: "#ffffff"
   web: false
