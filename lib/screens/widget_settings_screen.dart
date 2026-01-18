@@ -41,12 +41,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
     if (mounted) {
       await context.read<WidgetService>().refreshWidgetSettings();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(prefs.getLabel('widget_updated')),
-          duration: const Duration(milliseconds: 750),
-        ),
-      );
+      // Removed Success Snackbar
     }
   }
 
@@ -54,7 +49,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
     return Scaffold(
-      // --- FIX: Force LTR on AppBar ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -62,7 +56,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
           child: AppBar(title: Text(prefs.getLabel('widget_customization'))),
         ),
       ),
-      // --------------------------------
       body: ListView(
         children: [
           SwitchListTile(

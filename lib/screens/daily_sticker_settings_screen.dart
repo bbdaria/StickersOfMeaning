@@ -38,24 +38,14 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
 
   Future<void> _updateWidgetOnly() async {
     final prefs = context.read<PreferencesService>();
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(prefs.getLabel('updating_widget')),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    // Removed "Updating widget..." Snackbar
 
     try {
       await context.read<ApiService>().updateWidgetContent(
         context.read<PreferencesService>(),
         context.read<WidgetService>(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(prefs.getLabel('widget_updated'))),
-        );
-      }
+      // Removed "Widget updated" Snackbar
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -67,11 +57,9 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // קבלת שירות ההגדרות לטובת תרגום
     final prefs = context.watch<PreferencesService>();
 
     return Scaffold(
-      // --- תיקון: אילוץ LTR ב-AppBar כדי שכפתור החזרה יישאר בצד שמאל ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -79,7 +67,6 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
           child: AppBar(title: Text(prefs.getLabel('content_preferences'))),
         ),
       ),
-      // ----------------------------------------------------------------
       body: Consumer<PreferencesService>(
         builder: (context, prefs, child) {
           final pool = prefs.getStickerPool();
@@ -126,7 +113,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                   if (newValue != prefs.stickerSource) {
                     await prefs.setDailyFilterCategories([]);
                     await prefs.setStickerSource(newValue);
-                    _updateWidgetOnly(); // עדכון הווידג'ט בשינוי מקור
+                    _updateWidgetOnly();
                   }
                 },
                 style: const ButtonStyle(
@@ -214,7 +201,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                           newFilters.remove(entry.key);
                         }
                         await prefs.setDailyFilterCategories(newFilters);
-                        _updateWidgetOnly(); // עדכון הווידג'ט בשינוי פילטר
+                        _updateWidgetOnly();
                       },
                     );
                   }).toList(),

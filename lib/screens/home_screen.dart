@@ -24,7 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<Sticker>? _futureSticker;
-  int? _currentWidgetStickerId; // To track what's on the widget
+  int? _currentWidgetStickerId;
 
   @override
   void initState() {
@@ -64,17 +64,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _sendToWidget(Sticker sticker) async {
     final widgetService = context.read<WidgetService>();
-    final prefs = context.read<PreferencesService>();
     await widgetService.updateStickerWidget(sticker);
     if (!mounted) return;
 
     setState(() {
       _currentWidgetStickerId = sticker.id;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(prefs.getLabel('widget_updated')), duration: const Duration(milliseconds: 750)),
-    );
   }
 
   Widget _buildMenuButton({
@@ -166,12 +161,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to changes to update UI
     final prefs = context.watch<PreferencesService>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      // Force LTR Directionality on the AppBar to keep buttons fixed
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -291,7 +284,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
                             child: Row(
                               children: [
-                                // See Info Button
                                 Expanded(
                                   child: SizedBox(
                                     height: 40,
@@ -324,17 +316,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(width: 10),
 
-                                // Send to Widget Button
                                 Expanded(
                                   child: isAlreadyInWidget
                                       ? SizedBox(
                                     height: 40,
-                                    child: OutlinedButton(
-                                      onPressed: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text(prefs.getLabel('sticker_in_widget')), duration: const Duration(milliseconds: 750))
-                                        );
-                                      },
+                                    // Changed from OutlinedButton to OutlinedButton.icon
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {},
                                       style: OutlinedButton.styleFrom(
                                         padding: EdgeInsets.zero,
                                         side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
@@ -342,7 +330,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                       ),
-                                      child: Text(
+                                      // Added checkmark icon
+                                      icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
+                                      label: Text(
                                         prefs.getLabel('sticker_in_widget'),
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
@@ -416,7 +406,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: const Color(0xFF1E3A8A),
                                   size: 30,
                                 ),
-                                tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
+                                tooltip: isSaved
+                                    ? prefs.getLabel('tooltip_remove_collection')
+                                    : prefs.getLabel('tooltip_save_collection'),
                                 splashColor: Colors.transparent,
                                 highlightColor: Colors.transparent,
                                 hoverColor: Colors.transparent,

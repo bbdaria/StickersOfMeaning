@@ -60,17 +60,12 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
     final prefs = context.read<PreferencesService>();
     await prefs.removeFromPool(id);
     _loadPool();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(prefs.getLabel('removed_from_pool')), duration: const Duration(milliseconds: 750)));
-    }
+    // Removed Snackbar
   }
 
   Future<void> _setAsWidget(Sticker sticker) async {
-    final prefs = context.read<PreferencesService>();
     await context.read<WidgetService>().updateStickerWidget(sticker);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(prefs.getLabel('widget_updated')), duration: const Duration(milliseconds: 750)));
-    }
+    // Removed Snackbar
   }
 
   @override
@@ -79,7 +74,6 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
     final isEnglish = prefs.language == 'en';
 
     return Scaffold(
-      // --- FIX: Force LTR on AppBar & Translate Title ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -149,7 +143,6 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                   imageProvider = NetworkImage(sticker.imageUrl);
                 }
 
-                // Localization logic for list item
                 String displayTitle = isEnglish
                     ? (parse(sticker.enQuote).body?.text ?? sticker.enQuote)
                     : (parse(sticker.heQuote).body?.text ?? sticker.heQuote);
@@ -188,7 +181,6 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                         overflow: TextOverflow.ellipsis
                     ),
 
-                    // --- FIX: Translate Popup Menu Items ---
                     trailing: PopupMenuButton(
                       itemBuilder: (context) => [
                         PopupMenuItem(
