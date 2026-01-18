@@ -325,7 +325,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                       onPressed: () async {
                         await context.read<PreferencesService>().addToPool(sticker);
                         if (!mounted) return;
-                        Navigator.pop(ctx);
+                        // Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(prefs.getLabel('saved_to_collection')),
