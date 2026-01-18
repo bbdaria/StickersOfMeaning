@@ -105,65 +105,70 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
     );
   }
 
-  Widget _buildColorSelector(String title, List<Color> colors, int selectedValue, Function(int) onSelected, double size) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(title, style: TextStyle(fontSize: size)),
-        ),
-        Container(
-          height: 45, // Height of the color bar
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12), // 1. Rounded Corners
-            border: Border.all(color: Colors.grey.shade300, width: 1), // 2. Boundary
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1), // 3. Shadow
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+  Widget _buildColorSelector(String title, List<Color> colors, int selectedValue, Function(int) onSelected, double size, {bool enabled = true}) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.5, // 1. Dim the whole control if disabled
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(title, style: TextStyle(fontSize: size)),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(11), // Clip inner content to match border
-            child: Row(
-              // 4. "One next to the other" - No gaps, using Expanded
-              children: colors.map((color) {
-                final isSelected = color.value == selectedValue;
+          Container(
+            height: 45,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: Row(
+                children: colors.map((color) {
+                  final isSelected = color.value == selectedValue;
+                  final isLight = color.computeLuminance() > 0.5 || color.opacity < 0.5;
 
-                // Calculate contrast for the checkmark icon
-                final isLight = color.computeLuminance() > 0.5 || color.opacity < 0.5;
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() => onSelected(color.value));
-                      _saveSettings();
-                    },
-                    child: Container(
-                      color: color, // The color block
-                      alignment: Alignment.center,
-                      child: isSelected
-                          ? Icon(
-                        Icons.check_circle,
-                        color: isLight ? Colors.black54 : Colors.white,
-                        size: 24,
-                      )
+                  return Expanded(
+                    child: GestureDetector(
+                      // 2. Disable clicks if not enabled
+                      onTap: enabled
+                          ? () {
+                        setState(() => onSelected(color.value));
+                        _saveSettings();
+                      }
                           : null,
+                      child: Container(
+                        color: color,
+                        alignment: Alignment.center,
+                        child: isSelected
+                            ? Icon(
+                          Icons.check_sharp,
+                          color: isLight ? Colors.black54 : Colors.white,
+                          size: 24,
+                        )
+                            : null,
+                      ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+
+
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
@@ -233,16 +238,16 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
             onChangeEnd: (value) => _saveSettings(),
           ),
           const SizedBox(height: 2),
-          _buildColorSelector(prefs.getLabel('text_color'), _textColors, _textColor,(val) => _textColor = val, 16),
+          _buildColorSelector(prefs.getLabel('text_color'), _textColors, _textColor,(val) => _textColor = val, 16, enabled: !_showImage),
           const SizedBox(height: 8),
-          _buildColorSelector(prefs.getLabel('background_color'), _bgColors, _bgColor, (val) => _bgColor = val, 16),
+          _buildColorSelector(prefs.getLabel('background_color'), _bgColors, _bgColor, (val) => _bgColor = val, 16, enabled: !_showImage),
 
           const SizedBox(height: 16),
 
           // Live Preview Card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(prefs.getLabel('preview'), style: TextStyle(fontSize: 16)),
+            child: Text(prefs.getLabel('preview'), style: TextStyle(fontSize: 16, color: (!_showImage) ? Colors.black : Colors.grey)),
           ),
           const SizedBox(height: 8),
           Center(
