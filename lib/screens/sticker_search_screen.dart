@@ -266,21 +266,41 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 children: [
                   // A. Reactive Bookmark Button
                   Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.bookmark_border, size: 20),
-                      label: Text(prefs.getLabel('add_to_collection')),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1E3A8A),
-                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                    child: SizedBox(
+                      height: 40,
+                      child: Consumer<PreferencesService>(
+                          builder: (context, prefs, _) {
+                            final isSaved = prefs.isStickerInPool(sticker.id);
+                            return OutlinedButton.icon(
+                              icon: Icon(
+                                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                  size: 20
+                              ),
+                              label: Text(
+                                isSaved ? 'In Collection' : 'Add to Collection',
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1E3A8A),
+                                side: const BorderSide(color: Color(0xFF1E3A8A), width: 1.5),
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              onPressed: () async {
+                                if (isSaved) {
+                                  await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
+                                } else {
+                                  await prefs.addToPool(sticker);
+                                }
+                              },
+                            );
+                          }
                       ),
-                      onPressed: () async {
-                        await context.read<PreferencesService>().addToPool(sticker);
-                        if (!mounted) return;
-                      },
                     ),
                   ),
 
@@ -288,20 +308,86 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
 
                   // B. Set as Widget Button
                   Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.send, size: 20),
-                      label: const Text('Set as Widget', style: TextStyle(fontSize: 13)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF1E3A8A),
-                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      onPressed: () async {
-                        await context.read<WidgetService>().updateStickerWidget(sticker);
-                        // Removed Success Snackbar
+                    child: Consumer<PreferencesService>(
+                      builder: (context, prefs, _) {
+                        final isAlreadyInWidget = prefs.widgetStickerId == sticker.id;
+                        final isEnglish = prefs.language == 'en';
+
+                        return isAlreadyInWidget
+                            ? SizedBox(
+                          height: 40,
+                          // CHECKMARK STATE
+                          child: OutlinedButton.icon(
+                            onPressed: () {}, // No action needed
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
+                            label: Text(
+                              isEnglish ? 'Active on Widget' : 'פעיל בווידג׳ט',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFF1E3A8A),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        )
+                            : Container(
+                          height: 40,
+                          // GRADIENT ACTION STATE
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)],
+                            ),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              // 1. Update the actual widget
+                              await context.read<WidgetService>().updateStickerWidget(sticker);
+
+                              // 2. Update Prefs -> triggers notifyListeners() -> rebuilds this button
+                              await prefs.setWidgetStickerId(sticker.id);
+
+                              if (!mounted) return;
+
+                              // REMOVED: Navigator.pop(ctx);
+                              // We stay here so the user sees the button turn into a checkmark!
+
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Widget updated successfully!'),
+                                  duration: Duration(milliseconds: 750),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              isEnglish ? 'Set as Widget' : 'קבע כווידג׳ט',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),

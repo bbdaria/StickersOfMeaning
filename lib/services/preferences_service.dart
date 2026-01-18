@@ -372,5 +372,6 @@ class PreferencesService extends ChangeNotifier {
   int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
+    notifyListeners();
   }
 }
