@@ -13,57 +13,79 @@ import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
 import 'widget_settings_screen.dart';
 
-
-
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/';
 
-
   const HomeScreen({super.key});
-
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-
 class _HomeScreenState extends State<HomeScreen> {
   Future<Sticker>? _futureSticker;
-
+  int? _currentWidgetStickerId; // To track what's on the widget
 
   @override
   void initState() {
     super.initState();
     _loadDailySticker();
+    // We do NOT call _loadWidgetStickerId() here anymore.
+    // It is now chained inside _loadDailySticker to ensure it runs AFTER
+    // the daily sticker logic (which might update the widget).
   }
-
 
   void _loadDailySticker() {
     final api = context.read<ApiService>();
     final prefs = context.read<PreferencesService>();
     final widgetService = context.read<WidgetService>();
 
-
     setState(() {
-      _futureSticker = api.getDailySticker(prefs, widgetService);
+      // Chain the Future:
+      // 1. Get Daily Sticker (updates widget if needed)
+      // 2. Then load the widget ID (guaranteed to see the update)
+      // 3. Return the sticker to the builder
+      _futureSticker = api.getDailySticker(prefs, widgetService).then((sticker) async {
+        await _loadWidgetStickerId();
+        return sticker;
+      });
     });
   }
 
+  Future<void> _loadWidgetStickerId() async {
+    final widgetService = context.read<WidgetService>();
+    final id = await widgetService.getWidgetStickerId();
+    if (mounted) {
+      setState(() {
+        _currentWidgetStickerId = id;
+      });
+    }
+  }
 
   Future<void> _refreshSticker() async {
     _loadDailySticker();
+    // Wait for the full chain to complete so the spinner doesn't disappear too early
+    try {
+      if (_futureSticker != null) await _futureSticker;
+    } catch (e) {
+      // Errors are handled by the FutureBuilder UI
+    }
   }
-
 
   Future<void> _sendToWidget(Sticker sticker) async {
     final widgetService = context.read<WidgetService>();
     await widgetService.updateStickerWidget(sticker);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750)));
-  }
 
+    // Update local state immediately
+    setState(() {
+      _currentWidgetStickerId = sticker.id;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Widget updated'), duration: Duration(milliseconds: 750)),
+    );
+  }
 
   // Redesigned Menu Button (Compact White Card Style)
   Widget _buildMenuButton({
@@ -140,20 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _openMainSite(BuildContext context) async {
-    const url = 'https://stickersofmeaning.org';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open site')),
-        );
-      }
-    }
-  }
-
   Future<void> _openExternalUrl(BuildContext context, url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -215,200 +223,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            // FutureBuilder<Sticker>(
-            //   future: _futureSticker,
-            //   builder: (context, snapshot) {
-            //     if (snapshot.connectionState == ConnectionState.waiting) {
-            //       return const Center(
-            //         child: Padding(
-            //           padding: EdgeInsets.all(24),
-            //           child: CircularProgressIndicator(),
-            //         ),
-            //       );
-            //     } else if (snapshot.hasError) {
-            //       return Padding(
-            //         padding: const EdgeInsets.all(16),
-            //         child: Text(
-            //           'Error loading sticker: while connecting',
-            //           style: const TextStyle(color: Colors.red),
-            //         ),
-            //       );
-            //     } else if (!snapshot.hasData) {
-            //       return const Padding(
-            //         padding: EdgeInsets.all(16),
-            //         child: Text('No sticker available'),
-            //       );
-            //     }
-            //
-            //
-            //     final sticker = snapshot.data!;
-            //     return Card(
-            //       elevation: 2,
-            //       shadowColor: Colors.black.withOpacity(0.08),
-            //       clipBehavior: Clip.antiAlias,
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(16),
-            //       ),
-            //       child: Column(
-            //         crossAxisAlignment: CrossAxisAlignment.stretch,
-            //         children: [
-            //           if (sticker.imageUrl.isNotEmpty)
-            //             Padding(
-            //               padding: const EdgeInsets.only(top: 12.0), // Adds the gap at the top
-            //               child: AspectRatio(
-            //                 aspectRatio: 16 / 9,
-            //                 child: Image.network(
-            //                   sticker.imageUrl,
-            //                   fit: BoxFit.contain,
-            //                   errorBuilder: (context, error, stackTrace) {
-            //                     return const Center(child: Icon(Icons.broken_image));
-            //                   },
-            //                 ),
-            //               ),
-            //             ),
-            //           Padding(
-            //             padding: const EdgeInsets.all(14),
-            //             child: Text(
-            //               sticker.text,
-            //               style: const TextStyle(
-            //                 fontSize: 18,
-            //                 fontWeight: FontWeight.bold,
-            //               ),
-            //               textAlign: TextAlign.center,
-            //             ),
-            //           ),
-            //           Padding(
-            //             padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
-            //             child: Row(
-            //               children: [
-            //                 // 1. See Info Button (Compact Outlined)
-            //                 Expanded(
-            //                   child: SizedBox(
-            //                     height: 40,
-            //                     child: OutlinedButton(
-            //                       onPressed: () async {
-            //                         final uri = Uri.parse(sticker.postUrl);
-            //                         if (await canLaunchUrl(uri)) {
-            //                           await launchUrl(uri,
-            //                               mode: LaunchMode.externalApplication);
-            //                         }
-            //                       },
-            //                       style: OutlinedButton.styleFrom(
-            //                         padding: EdgeInsets.zero,
-            //                         side: const BorderSide(
-            //                             color: Color(0xFF1E3A8A), width: 1),
-            //                         shape: RoundedRectangleBorder(
-            //                           borderRadius: BorderRadius.circular(20),
-            //                         ),
-            //                       ),
-            //                       child: const Text(
-            //                         'See Info',
-            //                         style: TextStyle(
-            //                           color: Color(0xFF1E3A8A),
-            //                           fontWeight: FontWeight.bold,
-            //                           fontSize: 13,
-            //                         ),
-            //                       ),
-            //                     ),
-            //                   ),
-            //                 ),
-            //                 const SizedBox(width: 10),
-            //                 // 2. Send to Widget Button (Compact Gradient)
-            //                 Expanded(
-            //                   child: Container(
-            //                     height: 40,
-            //                     decoration: BoxDecoration(
-            //                       borderRadius: BorderRadius.circular(20),
-            //                       gradient: const LinearGradient(
-            //                         begin: Alignment.topCenter,
-            //                         end: Alignment.bottomCenter,
-            //                         colors: [
-            //                           Color(0xFF1E3A8A),
-            //                           Color(0xFF3B82C4)
-            //                         ],
-            //                       ),
-            //                       boxShadow: [
-            //                         BoxShadow(
-            //                           color: const Color(0xFF1E3A8A).withOpacity(0.2),
-            //                           blurRadius: 4,
-            //                           offset: const Offset(0, 2),
-            //                         ),
-            //                       ],
-            //                     ),
-            //                     child: ElevatedButton(
-            //                       onPressed: () => _sendToWidget(sticker),
-            //                       style: ElevatedButton.styleFrom(
-            //                         backgroundColor: Colors.transparent,
-            //                         shadowColor: Colors.transparent,
-            //                         shape: RoundedRectangleBorder(
-            //                           borderRadius: BorderRadius.circular(20),
-            //                         ),
-            //                         padding: EdgeInsets.zero,
-            //                       ),
-            //                       child: const Text(
-            //                         'Send to Widget',
-            //                         style: TextStyle(
-            //                           color: Colors.white,
-            //                           fontWeight: FontWeight.bold,
-            //                           fontSize: 13,
-            //                         ),
-            //                       ),
-            //                     ),
-            //                   ),
-            //                 ),
-            //                 const SizedBox(width: 10),
-            //                 // 2. Send to Widget Button (Compact Gradient)
-            //                 Expanded(
-            //                   child: Container(
-            //                     height: 40,
-            //                     decoration: BoxDecoration(
-            //                       borderRadius: BorderRadius.circular(20),
-            //                       gradient: const LinearGradient(
-            //                         begin: Alignment.topCenter,
-            //                         end: Alignment.bottomCenter,
-            //                         colors: [
-            //                           Color(0xFF1E3A8A),
-            //                           Color(0xFF3B82C4)
-            //                         ],
-            //                       ),
-            //                       boxShadow: [
-            //                         BoxShadow(
-            //                           color: const Color(0xFF1E3A8A).withOpacity(0.2),
-            //                           blurRadius: 4,
-            //                           offset: const Offset(0, 2),
-            //                         ),
-            //                       ],
-            //                     ),
-            //                     child: ElevatedButton(
-            //                       onPressed: () => _sendToWidget(sticker),
-            //                       style: ElevatedButton.styleFrom(
-            //                         backgroundColor: Colors.transparent,
-            //                         shadowColor: Colors.transparent,
-            //                         shape: RoundedRectangleBorder(
-            //                           borderRadius: BorderRadius.circular(20),
-            //                         ),
-            //                         padding: EdgeInsets.zero,
-            //                       ),
-            //                       child: const Text(
-            //                         'Save',
-            //                         style: TextStyle(
-            //                           color: Colors.white,
-            //                           fontWeight: FontWeight.bold,
-            //                           fontSize: 13,
-            //                         ),
-            //                       ),
-            //                     ),
-            //                   ),
-            //                 ),
-            //               ],
-            //             ),
-            //           ),
-            //         ],
-            //       ),
-            //     );
-            //   },
-            // ),
-
             FutureBuilder<Sticker>(
               future: _futureSticker,
               builder: (context, snapshot) {
@@ -435,6 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 final sticker = snapshot.data!;
+                // Ensure check is against current state
+                final isAlreadyInWidget = _currentWidgetStickerId == sticker.id;
+
                 return Card(
                   elevation: 2,
                   shadowColor: Colors.black.withOpacity(0.08),
@@ -509,9 +326,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-                                // Send to Widget Button
+
+                                // Send to Widget / Already in Widget Button
                                 Expanded(
-                                  child: Container(
+                                  child: isAlreadyInWidget
+                                      ? SizedBox(
+                                    height: 40,
+                                    child: OutlinedButton(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Sticker is already in widget'), duration: Duration(milliseconds: 750))
+                                        );
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Sticker already in widget',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Color(0xFF1E3A8A),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                      : Container(
                                     height: 40,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(20),
@@ -551,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
 
-                      // 2. NEW: Floating Ribbon Button (Top Right)
+                      // 2. Floating Ribbon Button (Top Right)
                       Positioned(
                         top: 0,
                         right: 4,
@@ -567,9 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
                               onPressed: () async {
                                 if (isSaved) {
-                                  // --- UPDATED: Use Safe Remove ---
                                   await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
-                                  // --------------------------------
                                 } else {
                                   await prefs.addToPool(sticker);
                                   if (context.mounted) {
@@ -594,22 +437,25 @@ class _HomeScreenState extends State<HomeScreen> {
               title: 'Your collection',
               subtitle: 'Explore and add to the collection',
               icon: Icons.collections,
-              onTap: () =>
-                  Navigator.pushNamed(context, StickerPoolScreen.routeName),
+              onTap: () => Navigator.pushNamed(context, StickerPoolScreen.routeName).then((_) {
+                _loadWidgetStickerId(); // Refresh check when returning
+              }),
             ),
             _buildMenuButton(
               title: 'Customize your widget',
               subtitle: 'Settings and customization',
               icon: Icons.color_lens,
-              onTap: () =>
-                  Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
+              onTap: () => Navigator.pushNamed(context, WidgetSettingsScreen.routeName).then((_) {
+                _loadWidgetStickerId(); // Refresh check when returning
+              }),
             ),
             _buildMenuButton(
               title: 'Content preferences',
               subtitle: 'What would you like to see?',
               icon: Icons.widgets,
-              onTap: () =>
-                  Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName),
+              onTap: () => Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName).then((_) {
+                _loadWidgetStickerId(); // Refresh check when returning
+              }),
             ),
             _buildMenuButton(
               title: 'Visit our site',
@@ -624,6 +470,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-
-

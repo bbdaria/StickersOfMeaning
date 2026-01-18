@@ -27,6 +27,12 @@ class WidgetService {
     return title ?? "Sticker of Meaning";
   }
 
+  // --- NEW: Get the ID of the sticker currently in the widget ---
+  Future<int?> getWidgetStickerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('latest_sticker_id');
+  }
+
   // --- 1. REFRESH SETTINGS (Called by Language Toggle) ---
   Future<void> refreshWidgetSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -88,6 +94,7 @@ class WidgetService {
     final String language = prefs.getString('app_language') ?? 'en';
 
     // 1. Save Sticker Components locally (So we can switch languages later)
+    await prefs.setInt('latest_sticker_id', sticker.id); // Save ID
     await prefs.setString('latest_sticker_quote_he', sticker.heQuote);
     await prefs.setString('latest_sticker_quote_en', sticker.enQuote);
     await prefs.setString('latest_sticker_content', sticker.content);
