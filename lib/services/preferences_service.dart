@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widget_service.dart';
 import '../models/sticker.dart';
+import 'package:flutter/material.dart';
 
 class PreferencesService extends ChangeNotifier {
   static const _poolKey = 'sticker_pool';
@@ -33,6 +34,10 @@ class PreferencesService extends ChangeNotifier {
   List<int> _dailyFilterCategories = [];
   double _widgetFontSize = 16.0;
   bool _widgetShowImage = true;
+  static const _keyWidgetTextColor = 'widget_text_color';
+  static const _keyWidgetBgColor = 'widget_bg_color';
+  // int _widgetTextColor = 0xFF1E3A8A;
+  // int _widgetBackgroundColor = 0xFFFFFFFF;
 
   List<Sticker> _cachedPool = [];
 
@@ -49,6 +54,8 @@ class PreferencesService extends ChangeNotifier {
 
     _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
+    // _widgetTextColor = _prefs.getInt(_keyWidgetTextColor) ?? _widgetTextColor;
+    // _widgetBackgroundColor = _prefs.getInt(_keyWidgetBgColor) ?? _widgetBackgroundColor;
 
     _loadPoolToMemory();
   }
@@ -212,6 +219,9 @@ class PreferencesService extends ChangeNotifier {
   List<int> get dailyFilterCategories => _dailyFilterCategories;
   List<String> get seenStickerIds => _prefs.getStringList(_keySeenStickers) ?? [];
 
+  Color get widgetTextColor => Color(_prefs.getInt(_keyWidgetTextColor) ?? 0xFF1E3A8A);
+  Color get widgetBackgroundColor => Color(_prefs.getInt(_keyWidgetBgColor) ?? 0xFFFFFFFF);
+
   // --- Setters ---
   Future<void> setLanguage(String value) async {
     _language = value;
@@ -353,5 +363,29 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
     notifyListeners();
+  }
+
+  Future<int> getWidgetTextColor() async {
+    return _prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
+  }
+
+  Future<void> setWidgetTextColor(int colorValue) async {
+    await _prefs.setInt('widget_text_color', colorValue);
+  }
+
+  Future<int> getWidgetBackgroundColor() async {
+    return _prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
+  }
+
+  Future<void> setWidgetBackgroundColor(int colorValue) async {
+    await _prefs.setInt('widget_bg_color', colorValue);
+  }
+
+  Future<double> getWidgetOpacity() async {
+    return _prefs.getDouble('widget_opacity') ?? 1.0;
+  }
+
+  Future<void> setWidgetOpacity(double opacity) async {
+    await _prefs.setDouble('widget_opacity', opacity);
   }
 }

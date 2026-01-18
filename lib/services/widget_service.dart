@@ -3,8 +3,9 @@ import 'package:home_widget/home_widget.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/sticker.dart';
+import 'package:flutter/material.dart';
+
 
 class WidgetService {
   static const String androidWidgetProvider = 'StickerWidgetProvider';
@@ -18,8 +19,10 @@ class WidgetService {
     if (lang == 'he' && quoteHe != null && quoteHe.isNotEmpty) return quoteHe;
     if (lang == 'en' && quoteEn != null && quoteEn.isNotEmpty) return quoteEn;
 
+    // 2. Fallback to Main Content (The "Quote" from the DB)
     if (content != null && content.isNotEmpty) return content;
 
+    // 3. Last Resort: Title (Name)
     return title ?? "Sticker of Meaning";
   }
 
@@ -32,11 +35,18 @@ class WidgetService {
     final prefs = await SharedPreferences.getInstance();
     final bool showImage = prefs.getBool('widget_show_image') ?? true;
     final double fontSize = prefs.getDouble('widget_font_size') ?? 16.0;
+    final int textColor = prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
+    final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
+    final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
+
     final String language = prefs.getString('app_language') ?? 'en';
+    final int finalBgColor = Color(rawBgColor).withOpacity(opacity).value;
+
     final quoteHe = prefs.getString('latest_sticker_quote_he');
     final quoteEn = prefs.getString('latest_sticker_quote_en');
     final content = prefs.getString('latest_sticker_content');
     final title = prefs.getString('latest_sticker_title');
+
     final String textToShow = _gettextToShow(language, quoteHe, quoteEn, content, title);
 
     if (showImage) {
@@ -61,6 +71,11 @@ class WidgetService {
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
     await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
+    await HomeWidget.saveWidgetData<bool>('show_image', showImage);
+    await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
+    await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
+    await HomeWidget.saveWidgetData<int>('sticker_text_color', textColor);
+    await HomeWidget.saveWidgetData<int>('sticker_bg_color', finalBgColor);
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,
@@ -82,7 +97,11 @@ class WidgetService {
     await prefs.setString('latest_sticker_content', sticker.content);
     await prefs.setString('latest_sticker_title', sticker.text);
     await prefs.setString('saved_sticker_image_url', sticker.imageUrl);
+    final int textColor = prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
+    final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
+    final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
 
+    final int finalBgColor = Color(rawBgColor).withOpacity(opacity).value;
     if (sticker.imageUrl.isNotEmpty) {
       try {
         final url = Uri.parse(sticker.imageUrl);
@@ -101,10 +120,11 @@ class WidgetService {
 
     final String textToShow = _gettextToShow(language, sticker.heQuote, sticker.enQuote, sticker.content, sticker.text);
     await HomeWidget.saveWidgetData<String>('sticker_text', textToShow);
-
     await HomeWidget.saveWidgetData<bool>('show_image', showImage);
     await HomeWidget.saveWidgetData<String>('sticker_image', localImagePath);
     await HomeWidget.saveWidgetData<String>('sticker_font_size', fontSize.toString());
+    await HomeWidget.saveWidgetData<int>('sticker_text_color', textColor);
+    await HomeWidget.saveWidgetData<int>('sticker_bg_color', finalBgColor);
 
     await HomeWidget.updateWidget(
       name: androidWidgetProvider,

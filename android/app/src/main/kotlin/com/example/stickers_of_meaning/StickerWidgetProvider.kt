@@ -33,6 +33,8 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 val textToShow = widgetData.getString("sticker_text", "Open App to Load") ?: "No Text"
                 val imagePath = widgetData.getString("sticker_image", null)
                 val showImage = widgetData.getBoolean("show_image", true)
+                val textColor = widgetData.getInt("sticker_text_color", Color.parseColor("#1E3A8A"))
+                val bgColor = widgetData.getInt("sticker_bg_color", Color.WHITE)
 
                 // Font Size Logic (Safe parsing)
                 val rawSize = widgetData.all["sticker_font_size"]
@@ -81,8 +83,8 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     setViewVisibility(R.id.text_container, View.VISIBLE)
 
                     // White Background
-                    setInt(R.id.widget_root, "setBackgroundColor", Color.WHITE)
-                    setTextColor(R.id.widget_text, Color.parseColor("#1E3A8A"))
+                    setInt(R.id.widget_root, "setBackgroundColor", bgColor)
+                    setTextColor(R.id.widget_text, textColor)
                 }
             }
 
