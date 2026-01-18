@@ -8,6 +8,7 @@ import '../services/widget_service.dart';
 import '../widgets/gradient_button.dart';
 import 'package:html/parser.dart' show parse;
 import '../services/preferences_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -190,6 +191,19 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     }
   }
 
+  Future<void> _openExternalUrl(BuildContext context, url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open site')),
+        );
+      }
+    }
+  }
+
   void _showStickerDetails(Sticker sticker) {
     // 1. Get current language preference
     final language = context.read<PreferencesService>().language;
@@ -212,52 +226,85 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white, // FIX: Force white background
+        surfaceTintColor: Colors.white, // FIX: Remove M3 purple tint
         clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- Image Section (Unchanged) ---
+
             Stack(
               children: [
+                // 1. BACKGROUND LAYER: Image
                 if (sticker.imageUrl.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 24.0),
+                    // CHANGED: Increased padding to 50.0 so it doesn't touch buttons
+                    padding: const EdgeInsets.only(top: 50.0),
                     child: SizedBox(
                       width: double.infinity,
                       height: 200,
                       child: Image.network(
                         sticker.imageUrl,
                         fit: BoxFit.contain,
+                        alignment: Alignment.center,
                         errorBuilder: (_, __, ___) =>
-                            Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+                            Container(color: Colors.white, child: const Icon(Icons.broken_image)),
                       ),
                     ),
                   )
                 else
                   Container(
                     height: 60,
-                    margin: const EdgeInsets.only(top: 24.0),
-                    color: const Color(0xFFF5F7FA),
-                    child: const Center(child: Icon(Icons.sticky_note_2, size: 30, color: Colors.grey)),
+                    // CHANGED: Increased margin here too for consistency
+                    margin: const EdgeInsets.only(top: 50.0),
+                    color: const Color(0xFFFFFFFF),
+                    child: const Center(child: Icon(Icons.sticky_note_2, size: 30, color: Colors.white)),
                   ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.1),
-                    radius: 16,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: Colors.black54),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => Navigator.pop(ctx),
+
+                // 2. FOREGROUND LAYER: AppBar with buttons
+                if (sticker.postUrl.isNotEmpty)
+                  AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    // CHANGED: Added padding around the button
+                    leading: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.info_outline, size: 25, color: Colors.black87),
+                        tooltip: 'Visit Site',
+                        onPressed: () => _openExternalUrl(context, sticker.postUrl),
+                      ),
                     ),
+                    actions: [
+                      // CHANGED: Added padding around the button
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, size: 25, color: Colors.black87),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      )
+                    ],
+                  )
+                else
+                  AppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    actions: [
+                      // CHANGED: Added padding around the button
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, size: 25, color: Colors.black87),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      )
+                    ],
                   ),
-                ),
               ],
             ),
-
             // --- Text Section (Dynamic Language) ---
             Flexible(
               child: SingleChildScrollView(
