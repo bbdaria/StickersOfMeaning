@@ -21,7 +21,7 @@ class PreferencesService extends ChangeNotifier {
   static const _keyWidgetFontSize = 'widget_font_size';
   static const _keyWidgetShowImage = 'widget_show_image';
 
-  // Legacy keys
+  // --- Legacy keys ---
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
@@ -37,16 +37,13 @@ class PreferencesService extends ChangeNotifier {
   List<Sticker> _cachedPool = [];
 
   Future<void> init() async {
+    // sets up the service and loads all persistent data into memory at start
     _prefs = await SharedPreferences.getInstance();
-
     final dir = await getApplicationDocumentsDirectory();
     _appPath = dir.path;
-
     _language = _prefs.getString(_keyLanguage) ?? 'en';
     _stickerSource = _prefs.getString(_keyStickerSource) ?? 'web';
     _stickerFilters = _prefs.getStringList(_keyStickerFilters) ?? [];
-
-    // Load Daily Filters
     final dailyFilterList = _prefs.getStringList(_keyDailyFilters) ?? [];
     _dailyFilterCategories = dailyFilterList.map((e) => int.tryParse(e) ?? 0).where((e) => e != 0).toList();
 
@@ -56,7 +53,7 @@ class PreferencesService extends ChangeNotifier {
     _loadPoolToMemory();
   }
 
-  // --- Localization Dictionary ---
+  // --- Language Dictionary ---
   static const Map<String, Map<String, String>> _labels = {
     'en': {
       'app_title': 'Stickers of meaning',
@@ -71,9 +68,7 @@ class PreferencesService extends ChangeNotifier {
       'sticker_of_meaning': "Sticker Of Meaning",
       'see_info': "See Info",
       'send_to_widget': "Send to Widget",
-      'sticker_in_widget': "In Widget", // Changed
-      // 'widget_updated': "Widget updated", // Removed
-      // 'saved_to_collection': "Saved to collection!", // Removed
+      'sticker_in_widget': "In Widget",
       'could_not_open_site': "Could not open site",
       'preferences': "Preferences",
       'language': "Language",
@@ -97,14 +92,10 @@ class PreferencesService extends ChangeNotifier {
       'add_to_collection': "Add to Collection",
       'already_in_collection': "In collection",
       'set_as_widget': "Set as Widget",
-      // 'view': "View", // Removed
-      // 'widget_updated_success': "Widget updated successfully!", // Removed
       'no_sticker_available': "No sticker available",
       'open_full_post': "Open full post on site",
       'error_loading': "Error loading sticker",
       'no_link_available': "No link available for this sticker",
-
-      // New Content Preferences Keys
       'widget_source': "Widget Source",
       'widget_source_desc': "Where should the home screen widget get its sticker from?",
       'from_web': "From Web",
@@ -115,13 +106,9 @@ class PreferencesService extends ChangeNotifier {
       'no_categorized_stickers': "No categorized stickers in your collection.",
       'no_categories_available': "No categories available.",
       'refresh_widget': "Refresh widget",
-      // 'updating_widget': "Updating widget...", // Removed
       'update_failed': "Update failed",
-
-      // Pool Keys
       'search_collection_hint': "Search your stickers...",
       'empty_collection_message': "Your collection is empty.\nTap the + button to add stickers!",
-      // 'removed_from_pool': "Removed from pool", // Removed
       'remove': "Remove",
       'tooltip_save_collection': "Save to collection",
       'tooltip_remove_collection': "Remove from collection",
@@ -140,16 +127,14 @@ class PreferencesService extends ChangeNotifier {
       'sticker_of_meaning': "מדבקות עם משמעות",
       'see_info': "למידע נוסף",
       'send_to_widget': "הגדר כווידג'ט",
-      'sticker_in_widget': "בווידג'ט", // Changed
-      // 'widget_updated': "הווידג'ט עודכן", // Removed
-      // 'saved_to_collection': "המדבקה הוספה לאוסף!", // Removed
+      'sticker_in_widget': "בווידג'ט",
       'could_not_open_site': "לא ניתן לפתוח את האתר",
       'preferences': "הגדרות",
       'language': "שפה",
       'english': "English",
       'hebrew': "עברית",
       'sticker_preferences': "הגדרות המדבקות",
-      'source_filters': "סנן",
+      'source_filters': "מקור המדבקות ומסננים",
       'widget_customization': "התאמת וידג'ט",
       'font_size_image': "גודל גופן והגדרות תמונה",
       'show_image_widget': "הצג את תמונת הנופל בווידג'ט",
@@ -159,42 +144,34 @@ class PreferencesService extends ChangeNotifier {
       'sticker_search': "חיפוש מדבקות",
       'search_hint': "חיפוש...",
       'type_to_search': "הקלד לחיפוש...",
-      'filters': "סינונים (נושאים ואפשרויות)",
+      'filters': "מסננים (נושאים ואפשרויות)",
       'loading_topics': "טוען נושאים...",
       'start_search_instruction': "הקלד או בחר קטגוריה כדי להתחיל לחפש.",
       'no_stickers_found': "לא נמצאו מדבקות.",
       'add_to_collection': "הוסף לאוסף המדבקות",
       'already_in_collection': "המדבקה באוסף המדבקות",
       'set_as_widget': "הגדר כווידג'ט",
-      // 'view': "הצג", // Removed
-      // 'widget_updated_success': "הווידג'ט עודכן בהצלחה!", // Removed
       'no_sticker_available': "אין מדבקה זמינה",
       'open_full_post': "ראה את הפוסט המלא באתר",
       'error_loading': "שגיאה בטעינת המדבקה",
       'no_link_available': "אין קישור זמין עבור המדבקה הזו",
-
-      // New Content Preferences Keys
       'widget_source': "מקור הווידג'ט",
-      'widget_source_desc': "מאיפה הווידג'ט במסך הבית צריך לקחת את הסטיקר?",
-      'from_web': "מהרשת",
+      'widget_source_desc': "מאיפה הווידג'ט במסך הבית צריך לקחת את המדבקה?",
+      'from_web': "מהאתר",
       'from_collection': "מהאוסף שלי",
-      'empty_collection_warning': "האוסף שלך ריק! הסטיקר יילקח מהרשת עד שתוסיף סטיקרים.",
+      'empty_collection_warning': "האוסף שלך ריק! המדבקות תלקחנה מאתר עד שתוסיף מדבקות לאוסף.",
       'filter_stickers_title': "סינון סטיקרים לפי משמעות",
       'clear_all': "נקה הכל",
-      'no_categorized_stickers': "אין סטיקרים מקוטלגים באוסף שלך.",
+      'no_categorized_stickers': "אין מדבקות מקוטלגות באוסף שלך.",
       'no_categories_available': "אין קטגוריות זמינות.",
       'refresh_widget': "רענן וידג'ט",
-      // 'updating_widget': "מעדכן וידג'ט...", // Removed
       'update_failed': "העדכון נכשל",
-
-      // Pool Keys
       'search_collection_hint': "חפש באוסף שלך...",
-      'empty_collection_message': "האוסף שלך ריק.\nלחץ על כפתור ה-+ כדי להוסיף סטיקרים!",
-      // 'removed_from_pool': "הוסר מהאוסף", // Removed
+      'empty_collection_message': "האוסף שלך ריק.\nלחץ על כפתור ה-+ כדי להוסיף מדבקות!",
       'remove': "הסר",
       'tooltip_save_collection': "הוסף לאוסף",
       'tooltip_remove_collection': "הסר מהאוסף",
-      'collection_empty': "האוסף שלך ריק. המדבקות ילקחו מהאתר."
+      'collection_empty': "האוסף שלך ריק. המדבקות תלקחנה מהאתר."
     }
   };
 
@@ -292,9 +269,8 @@ class PreferencesService extends ChangeNotifier {
     await _prefs.remove(_keySeenStickers);
   }
 
-  // ---------------------------------------------------------
-  // POOL MANAGEMENT
-  // ---------------------------------------------------------
+
+  // --- sticker pool management ---
 
   List<Sticker> getStickerPool() {
     return List.unmodifiable(_cachedPool);

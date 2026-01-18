@@ -8,7 +8,6 @@ import '../services/preferences_service.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
-import '../widgets/gradient_button.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
 import 'widget_settings_screen.dart';

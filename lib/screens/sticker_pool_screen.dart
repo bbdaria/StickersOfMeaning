@@ -60,12 +60,10 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
     final prefs = context.read<PreferencesService>();
     await prefs.removeFromPool(id);
     _loadPool();
-    // Removed Snackbar
   }
 
   Future<void> _setAsWidget(Sticker sticker) async {
     await context.read<WidgetService>().updateStickerWidget(sticker);
-    // Removed Snackbar
   }
 
   @override

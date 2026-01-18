@@ -41,7 +41,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
     if (mounted) {
       await context.read<WidgetService>().refreshWidgetSettings();
-      // Removed Success Snackbar
     }
   }
 

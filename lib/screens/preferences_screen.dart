@@ -14,7 +14,6 @@ class PreferencesScreen extends StatelessWidget {
     final prefs = context.watch<PreferencesService>();
 
     return Scaffold(
-      // --- FIX: Force LTR on AppBar to keep back button on the left ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -22,11 +21,9 @@ class PreferencesScreen extends StatelessWidget {
           child: AppBar(title: Text(prefs.getLabel('preferences'))),
         ),
       ),
-      // ----------------------------------------------------------------
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 1. Language Dropdown
           Text(prefs.getLabel('language'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -48,7 +45,6 @@ class PreferencesScreen extends StatelessWidget {
           const Divider(),
           const SizedBox(height: 24),
 
-          // 2. Daily Sticker Preferences Link
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -68,7 +64,6 @@ class PreferencesScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // 3. Widget Preferences Link
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(

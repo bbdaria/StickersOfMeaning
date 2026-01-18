@@ -53,7 +53,6 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
     final prefs = context.watch<PreferencesService>();
 
     return Scaffold(
-      // --- FIX: Force LTR on AppBar ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Directionality(
@@ -63,7 +62,6 @@ class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
           ),
         ),
       ),
-      // --------------------------------
       body: FutureBuilder<Sticker>(
         future: _futureSticker,
         builder: (context, snapshot) {

@@ -1,21 +1,20 @@
 import 'package:html_unescape/html_unescape.dart';
 
 class Sticker {
-  final int id;
-  final String text;    // Hebrew Name
-  final String content; // Hebrew Quote
-  final String imageUrl;
-  final String postUrl;
-  final DateTime? date;
+  final int id;         // sticker Id
+  final String text;    // hebrew name
+  final String content; // hebrew quote
+  final String imageUrl;// image url
+  final String postUrl; // web post url
+  final DateTime? date; // date of death
 
   final String nameInEnglish;
   final String nameInHebrew;
-  final String enQuote;
-  final String heQuote;
+  final String enQuote; // sticker quote in english
+  final String heQuote; // sticker quote in hebrew
 
-  // This field is crucial for the pool
   final String? localImagePath;
-  final List<int> categories;
+  final List<int> categories; // all filters
 
   Sticker({
     required this.id,
@@ -37,19 +36,17 @@ class Sticker {
     String cleanText(dynamic input) {
       if (input == null) return '';
       String s = input.toString();
-      // 1. Remove HTML tags
+
+      // remove HTML tags via regex
       s = s.replaceAll(RegExp(r'<[^>]*>'), '');
-      // 2. Decode HTML entities (e.g. &amp; -> &)
       return unescape.convert(s).trim();
     }
 
-    // 1. Get Title (The Person's Name)
     String textContent = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
       textContent = cleanText(json['title']['rendered']);
     }
 
-    // --- NEW: Parse Meta Fields for English/Hebrew Data ---
     String nameEn = '';
     String nameHe = '';
     String quoteEn = '';
@@ -61,21 +58,15 @@ class Sticker {
       quoteEn = cleanText(json['meta']['en_quote']);
       quoteHe = cleanText(json['meta']['he_quote']);
     }
-    // -------------------------------------------------------
 
-    // 2. Find the Quote (The Meaning)
-    // [Existing logic remains, but we prioritize meta if found]
+
     String quoteContent = quoteHe.isNotEmpty ? quoteHe : '';
 
     if (quoteContent.isEmpty) {
-      // List of probable keys where the quote might be hidden
       const possibleKeys = [
         'quote', 'motto', 'message', 'meaning', 'description',
         'sticker_text', 'sticker_quote', 'life_rule'
       ];
-
-      // [Existing Fallback Logic...]
-      // A. Check Root Level
       for (var key in possibleKeys) {
         if (json[key] != null && json[key].toString().isNotEmpty) {
           quoteContent = unescape.convert(json[key].toString());
@@ -83,7 +74,7 @@ class Sticker {
         }
       }
 
-      // B. Check "meta" fields
+
       if (quoteContent.isEmpty && json['meta'] != null) {
         for (var key in possibleKeys) {
           if (json['meta'][key] != null && json['meta'][key].toString().isNotEmpty) {
@@ -93,8 +84,6 @@ class Sticker {
         }
       }
 
-      // [Keep existing C and D fallbacks for Content and Image Caption if needed]
-      // C. Fallback: Check Content/Excerpt
       if (quoteContent.isEmpty) {
         if (json['content'] != null && json['content']['rendered'] != null && json['content']['rendered'].toString().isNotEmpty) {
           String raw = json['content']['rendered'];
@@ -103,7 +92,7 @@ class Sticker {
         }
       }
 
-      // D. Fallback: Check Image Caption/Alt
+
       if (quoteContent.isEmpty && json['_embedded'] != null && json['_embedded']['wp:featuredmedia'] != null) {
         var mediaList = json['_embedded']['wp:featuredmedia'];
         if (mediaList is List && mediaList.isNotEmpty) {
@@ -119,7 +108,7 @@ class Sticker {
       }
     }
 
-    // 3. Get Image URL
+
     String imgUrl = '';
     if (json['_embedded'] != null &&
         json['_embedded']['wp:featuredmedia'] != null) {
@@ -129,7 +118,6 @@ class Sticker {
       }
     }
 
-    // Fallback if imageUrl is directly in root (sometimes used in local saves)
     if (imgUrl.isEmpty && json['imageUrl'] != null) {
       imgUrl = json['imageUrl'];
     }
@@ -139,12 +127,10 @@ class Sticker {
       cats = List<int>.from(json['categories']);
     }
 
-    // 5. Link
     String link = json['link'] ?? '';
 
-    // --- CRITICAL FIX: READ LOCAL PATH ---
     String? localPath = json['localImagePath'];
-    // -------------------------------------
+
 
     return Sticker(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,

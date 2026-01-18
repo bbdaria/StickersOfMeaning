@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/material.dart'; // Ensure Material is imported for BuildContext/SnackBar
-import 'package:provider/provider.dart'; // Ensure Provider is imported
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:html_unescape/html_unescape.dart';
@@ -23,6 +23,7 @@ class StickerIndexItem {
   });
 
   factory StickerIndexItem.fromJson(Map<String, dynamic> json) {
+    // parse sticker fields from json
     var unescape = HtmlUnescape();
     String heName = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
@@ -36,6 +37,8 @@ class StickerIndexItem {
     if (json['categories'] != null && json['categories'] is List) {
       cats = List<int>.from(json['categories']);
     }
+
+    // create sticker
     return StickerIndexItem(
       id: json['id'],
       hebrewName: heName,
@@ -69,7 +72,7 @@ class ApiService {
     return uri;
   }
 
-  // --- CORE SEARCH & FETCH METHODS ---
+  // --- search & fetch methods ---
 
   Future<void> fetchStickerIndex({
     required Function(List<StickerIndexItem>) onBatchLoaded,
@@ -149,7 +152,7 @@ class ApiService {
     return data.map((e) => Sticker.fromJson(e)).toList();
   }
 
-  // --- HOME SCREEN LOGIC (Always Random Web) ---
+  // --- daily sticker ---
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
       WidgetService widgetService, {
@@ -162,9 +165,8 @@ class ApiService {
     final currentId = prefs.dailyStickerId;
 
     Sticker homeSticker;
-    bool shouldUpdateWidget = false; // <--- Logic Flag
+    bool shouldUpdateWidget = false;
 
-    // 1. Try to load cached "Home" sticker
     if (!forceRefresh && lastDate == todayString && currentId != null) {
       try {
         if (prefs.isStickerInPool(currentId)) {
@@ -172,23 +174,17 @@ class ApiService {
         } else {
           homeSticker = await _fetchStickerById(currentId);
         }
-        // CACHE HIT: We loaded today's existing sticker.
-        // We do NOT update the widget, preserving whatever the user manually sent there.
       } catch (e) {
         debugPrint('Error fetching cached home sticker, fetching new: $e');
-        // Cache failed, forced to fetch new
         homeSticker = await _fetchRandomFromWeb(prefs, null);
         await prefs.setDailySticker(homeSticker.id, todayString);
-        shouldUpdateWidget = true; // New data implies we should sync the widget
+        shouldUpdateWidget = true;
       }
     } else {
-      // 2. Fetch NEW Random Web Sticker (New Day or Force Refresh)
       homeSticker = await _fetchRandomFromWeb(prefs, null);
       await prefs.setDailySticker(homeSticker.id, todayString);
-      shouldUpdateWidget = true; // New Day = Update Widget
+      shouldUpdateWidget = true;
     }
-
-    // 3. Update Widget (Conditional)
     if (shouldUpdateWidget) {
       await updateWidgetContent(prefs, widgetService, candidateSticker: homeSticker);
     }
@@ -196,7 +192,7 @@ class ApiService {
     return homeSticker;
   }
 
-  // --- WIDGET LOGIC (Respects Settings) ---
+  // --- widget logic ---
   Future<void> updateWidgetContent(
       PreferencesService prefs,
       WidgetService widgetService,
@@ -207,7 +203,6 @@ class ApiService {
 
     try {
       if (prefs.stickerSource == 'pool') {
-        // --- POOL STRATEGY ---
         List<Sticker> pool = prefs.getStickerPool();
         if (filters.isNotEmpty) {
           pool = pool.where((s) => s.categories.any((c) => filters.contains(c))).toList();
@@ -216,17 +211,12 @@ class ApiService {
         if (pool.isNotEmpty) {
           widgetSticker = pool[Random().nextInt(pool.length)];
         } else {
-          // Fallback if pool empty or no matches
           widgetSticker = await _fetchRandomFromWeb(prefs, filters);
         }
       } else {
-        // --- WEB STRATEGY ---
         if (filters.isNotEmpty) {
-          // Must fetch specific filtered sticker from web
           widgetSticker = await _fetchRandomFromWeb(prefs, filters);
         } else {
-          // No filters = Pure Random.
-          // If we have a candidate (from Home load), use it to keep Home & Widget in sync by default.
           widgetSticker = candidateSticker ?? await _fetchRandomFromWeb(prefs, null);
         }
       }
@@ -237,7 +227,7 @@ class ApiService {
     }
   }
 
-  // Helper
+  // helpers for update widget content
   Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs, List<int>? categoryIds) async {
     final allIds = await _fetchStickerIds(categoryIds: categoryIds);
     if (allIds.isEmpty) throw Exception('No stickers found');
@@ -246,8 +236,6 @@ class ApiService {
     List<int> availableIds = allIds.where((id) => !seenIds.contains(id)).toList();
 
     if (availableIds.isEmpty) {
-      // Don't clear history if we are just filtering for one category,
-      // only clear if we are out of global options.
       if (categoryIds == null || categoryIds.isEmpty) {
         await prefs.clearHistory();
       }
@@ -285,20 +273,15 @@ class ApiService {
   Future<void> safeRemoveFromPool(BuildContext context, int id) async {
     final prefs = context.read<PreferencesService>();
     final widgetService = context.read<WidgetService>();
-
-    // 1. Check if the sticker being removed is the one currently on the widget
     final isWidgetTarget = (id == prefs.widgetStickerId);
     final isPoolMode = (prefs.stickerSource == 'pool');
 
-    // 2. Perform the actual removal
     await prefs.removeFromPool(id);
 
-    // 3. Handle Edge Cases
     if (isWidgetTarget && isPoolMode) {
       if (prefs
           .getStickerPool()
           .isEmpty) {
-        // Case: Pool is now empty -> Switch to Web & Refresh
         await prefs.setStickerSource('web');
         await updateWidgetContent(prefs, widgetService);
 
@@ -311,7 +294,6 @@ class ApiService {
           );
         }
       } else {
-        // Case: Pool has other items -> Just refresh widget to a new one
         await updateWidgetContent(prefs, widgetService);
 
         if (context.mounted) {

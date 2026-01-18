@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:stickers_of_meaning/screens/sticker_pool_screen.dart';
-
 import '../models/sticker.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
@@ -198,8 +196,8 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: Colors.white, // FIX: Force white background
-        surfaceTintColor: Colors.white, // FIX: Remove M3 purple tint
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -210,7 +208,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               children: [
                 if (sticker.imageUrl.isNotEmpty)
                   Padding(
-                    // CHANGED: Increased padding to 50.0 so it doesn't touch buttons
                     padding: const EdgeInsets.only(top: 50.0),
                     child: SizedBox(
                       width: double.infinity,
@@ -227,18 +224,14 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                 else
                   Container(
                     height: 60,
-                    // CHANGED: Increased margin here too for consistency
                     margin: const EdgeInsets.only(top: 50.0),
                     color: const Color(0xFFFFFFFF),
                     child: const Center(child: Icon(Icons.sticky_note_2, size: 30, color: Colors.white)),
                   ),
-
-                // 2. FOREGROUND LAYER: AppBar with buttons
                 if (sticker.postUrl.isNotEmpty)
                   AppBar(
                     backgroundColor: Colors.transparent,
                     elevation: 0,
-                    // CHANGED: Added padding around the button
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: IconButton(
@@ -248,7 +241,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                       ),
                     ),
                     actions: [
-                      // CHANGED: Added padding around the button
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: IconButton(
@@ -264,7 +256,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                     elevation: 0,
                     automaticallyImplyLeading: false,
                     actions: [
-                      // CHANGED: Added padding around the button
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: IconButton(
@@ -309,12 +300,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
               ),
             ),
 
-            // --- Buttons Section ---
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Row(
                 children: [
-                  // A. Reactive Bookmark Button
                   Expanded(
                     child: SizedBox(
                       height: 40,
@@ -355,8 +344,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                   ),
 
                   const SizedBox(width: 12),
-
-                  // B. Set as Widget Button
                   Expanded(
                     child: Consumer<PreferencesService>(
                       builder: (context, prefs, _) {
@@ -366,7 +353,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         return isAlreadyInWidget
                             ? SizedBox(
                           height: 40,
-                          // CHECKMARK STATE
                           child: OutlinedButton.icon(
                             onPressed: () {}, // No action needed
                             style: OutlinedButton.styleFrom(
@@ -390,7 +376,6 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                         )
                             : Container(
                           height: 40,
-                          // GRADIENT ACTION STATE
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             gradient: const LinearGradient(
@@ -401,24 +386,10 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           ),
                           child: ElevatedButton(
                             onPressed: () async {
-                              // 1. Update the actual widget
                               await context.read<WidgetService>().updateStickerWidget(sticker);
-
-                              // 2. Update Prefs -> triggers notifyListeners() -> rebuilds this button
                               await prefs.setWidgetStickerId(sticker.id);
 
                               if (!mounted) return;
-
-                              // REMOVED: Navigator.pop(ctx);
-                              // We stay here so the user sees the button turn into a checkmark!
-
-                              // ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                              // ScaffoldMessenger.of(context).showSnackBar(
-                              //   const SnackBar(
-                              //     content: Text('Widget updated successfully!'),
-                              //     duration: Duration(milliseconds: 750),
-                              //   ),
-                              // );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
