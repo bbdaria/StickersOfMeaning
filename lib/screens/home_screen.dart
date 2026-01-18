@@ -399,29 +399,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       // 2. Floating Ribbon Button (Top Right)
                       Positioned(
                         top: 0,
-                        right: 4,
+                        right: 5,
                         child: Consumer<PreferencesService>(
                           builder: (context, prefs, _) {
                             final isSaved = prefs.isStickerInPool(sticker.id);
-                            return IconButton(
-                              icon: Icon(
-                                isSaved ? Icons.bookmark : Icons.bookmark_border,
-                                color: const Color(0xFF1E3A8A),
-                                size: 30,
-                              ),
-                              tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
-                              onPressed: () async {
-                                if (isSaved) {
-                                  await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
-                                } else {
-                                  await prefs.addToPool(sticker);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Saved to collection!'), duration: Duration(milliseconds: 750)),
-                                    );
+                            return
+                              Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white, // The white circle
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withAlpha(0),
+                                        blurRadius: 7,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                              child: IconButton(
+                                icon: Icon(
+                                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                  color: const Color(0xFF1E3A8A),
+                                  size: 30,
+                                ),
+                                tooltip: isSaved ? 'Remove from collection' : 'Save to collection',
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
+                                onPressed: () async {
+                                  if (isSaved) {
+                                    await context.read<ApiService>().safeRemoveFromPool(context, sticker.id);
+                                  } else {
+                                    await prefs.addToPool(sticker);
                                   }
-                                }
-                              },
+                                },
+                              )
                             );
                           },
                         ),
