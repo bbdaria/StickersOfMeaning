@@ -378,7 +378,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                             ),
                             icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
                             label: Text(
-                              isEnglish ? 'Active on Widget' : 'פעיל בווידג׳ט',
+                              prefs.getLabel('sticker_in_widget'),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Color(0xFF1E3A8A),
