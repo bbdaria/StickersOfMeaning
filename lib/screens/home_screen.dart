@@ -242,6 +242,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 final sticker = snapshot.data!;
                 final isAlreadyInWidget = _currentWidgetStickerId == sticker.id;
 
+                String displayName = prefs.language == 'en'
+                    ? (sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.text)
+                    : sticker.nameInHebrew;
+
                 return Card(
                   elevation: 2,
                   shadowColor: Colors.black.withOpacity(0.08),
@@ -271,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Padding(
                             padding: const EdgeInsets.all(14),
                             child: Text(
-                              sticker.text,
+                              displayName,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
