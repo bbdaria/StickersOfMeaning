@@ -1,47 +1,60 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FFFFFF"
-    android:padding="8dp">
+    android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/widget_image"
+        android:id="@+id/widget_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_centerInParent="true"
-        android:scaleType="fitCenter"
-        android:visibility="gone"
-        android:src="@drawable/small_logo" />
+        android:src="@drawable/rounded_widget_background"
+        android:scaleType="fitXY"
+        android:visibility="visible" />
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/text_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/widget_text"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Loading..."
-            android:textColor="#1E3A8A"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:ellipsize="end" />
+        android:padding="8dp">
 
         <ImageView
-            android:id="@+id/widget_logo"
+            android:id="@+id/widget_image"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_gravity="center_horizontal"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true"
             android:scaleType="fitCenter"
-            android:adjustViewBounds="true"
-            android:src="@drawable/small_logo"
-            android:contentDescription="App Logo" />
+            android:visibility="gone"
+            android:src="@drawable/small_logo" />
 
-    </LinearLayout>
+        <LinearLayout
+            android:id="@+id/text_content_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="visible">
 
-</RelativeLayout>
+            <TextView
+                android:id="@+id/widget_text"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Loading..."
+                android:textColor="#1E3A8A"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:ellipsize="end" />
+
+            <ImageView
+                android:id="@+id/widget_logo"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_gravity="center_horizontal"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true"
+                android:src="@drawable/small_logo"
+                android:contentDescription="App Logo" />
+
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>

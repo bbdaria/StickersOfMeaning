@@ -86,20 +86,29 @@ class StickerWidgetProvider : HomeWidgetProvider() {
 
                 // 5. Apply Visibility & Colors
                 if (imageShown) {
-                    // MODE A: BACKGROUND IMAGE ONLY
+                    // --- IMAGE MODE ---
+                    // Show photo, hide text, hide rounded background
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
-                    setViewVisibility(R.id.text_container, View.GONE)
+                    setViewVisibility(R.id.text_content_layout, View.GONE)
+                    setViewVisibility(R.id.widget_background, View.GONE)
 
-                    // Transparent background so image shape shows
+                    // Transparent root
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // MODE B: TEXT + CUSTOM COLORS
+                    // --- TEXT MODE ---
+                    // Hide photo, show text
                     setViewVisibility(R.id.widget_image, View.GONE)
-                    setViewVisibility(R.id.text_container, View.VISIBLE)
+                    setViewVisibility(R.id.text_content_layout, View.VISIBLE)
 
-                    // Apply user selected colors
-                    setInt(R.id.widget_root, "setBackgroundColor", bgColor)
+                    // Show Rounded Background & Apply Color
+                    setViewVisibility(R.id.widget_background, View.VISIBLE)
+                    setInt(R.id.widget_background, "setColorFilter", bgColor)
+
+                    // Apply Text Color
                     setTextColor(R.id.widget_text, textColor)
+
+                    // Transparent root (so we see the rounded background underneath)
+                    setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 }
             }
 
