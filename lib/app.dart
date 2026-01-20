@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// If flutter_localizations is not in pubspec, these imports might fail.
-// Standard Flutter projects usually have them. If not, the Locale('he') will still trigger basic RTL.
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'screens/home_screen.dart';
@@ -21,14 +19,11 @@ class StickersApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Watch preferences to update locale when language changes
     final prefs = context.watch<PreferencesService>();
 
     return MaterialApp(
-      // Dynamic Title
       title: prefs.getLabel('app_title'),
 
-      // Locale Setup
       locale: Locale(prefs.language),
       supportedLocales: const [
         Locale('en', ''),

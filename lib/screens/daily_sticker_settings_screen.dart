@@ -38,14 +38,12 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
 
   Future<void> _updateWidgetOnly() async {
     final prefs = context.read<PreferencesService>();
-    // Removed "Updating widget..." Snackbar
 
     try {
       await context.read<ApiService>().updateWidgetContent(
         context.read<PreferencesService>(),
         context.read<WidgetService>(),
       );
-      // Removed "Widget updated" Snackbar
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

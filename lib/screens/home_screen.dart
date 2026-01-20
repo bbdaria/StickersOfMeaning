@@ -323,7 +323,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: isAlreadyInWidget
                                       ? SizedBox(
                                     height: 40,
-                                    // Changed from OutlinedButton to OutlinedButton.icon
                                     child: OutlinedButton.icon(
                                       onPressed: () {},
                                       style: OutlinedButton.styleFrom(
@@ -333,7 +332,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                       ),
-                                      // Added checkmark icon
                                       icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
                                       label: Text(
                                         prefs.getLabel('sticker_in_widget'),

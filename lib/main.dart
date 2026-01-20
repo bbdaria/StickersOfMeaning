@@ -9,7 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final preferencesService = PreferencesService();
-  await preferencesService.init(); // load stored prefs
+  await preferencesService.init();
 
   final apiService = ApiService(
     baseUrl: 'https://stickersofmeaning.org/wp-json/wp/v2/',

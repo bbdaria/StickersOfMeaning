@@ -19,10 +19,8 @@ class WidgetService {
     if (lang == 'he' && quoteHe != null && quoteHe.isNotEmpty) return quoteHe;
     if (lang == 'en' && quoteEn != null && quoteEn.isNotEmpty) return quoteEn;
 
-    // 2. Fallback to Main Content (The "Quote" from the DB)
     if (content != null && content.isNotEmpty) return content;
 
-    // 3. Last Resort: Title (Name)
     return title ?? "Sticker of Meaning";
   }
 

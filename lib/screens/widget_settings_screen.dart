@@ -24,22 +24,21 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   int _bgColor = 0xFFFFFFFF;
   double _opacity = 1.0;
 
-  // Predefined Palette
   final List<Color> _textColors = const [
     Colors.black,
-    Color(0xFF0e197e), // Navy
-    Color(0xFF1E3A8A), // Navy
-    Color(0xFF4b83bc), // Navy
-    Color(0xFF66b0fb), // Navy
+    Color(0xFF0e197e),
+    Color(0xFF1E3A8A),
+    Color(0xFF4b83bc),
+    Color(0xFF66b0fb),
     Colors.white
   ];
 
   final List<Color> _bgColors = const [
     Colors.black,
-    Color(0xFF0e197e), // Navy
-    Color(0xFF1E3A8A), // Navy
-    Color(0xFF4b83bc), // Navy
-    Color(0xFF66b0fb), // Navy
+    Color(0xFF0e197e),
+    Color(0xFF1E3A8A),
+    Color(0xFF4b83bc),
+    Color(0xFF66b0fb),
     Colors.white
   ];
 
@@ -82,32 +81,9 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
     }
   }
 
-  void _showColorPicker(BuildContext context, String title, Color currentColor, Function(Color) onColorChanged) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Pick $title Color'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: currentColor,
-            onColorChanged: onColorChanged,
-            labelTypes: const [],
-            pickerAreaHeightPercent: 0.8,
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Got it'),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildColorSelector(String title, List<Color> colors, int selectedValue, Function(int) onSelected, double size, {bool enabled = true}) {
     return Opacity(
-      opacity: enabled ? 1.0 : 0.5, // 1. Dim the whole control if disabled
+      opacity: enabled ? 1.0 : 0.5,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -139,7 +115,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
                   return Expanded(
                     child: GestureDetector(
-                      // 2. Disable clicks if not enabled
                       onTap: enabled
                           ? () {
                         setState(() => onSelected(color.value));
@@ -244,7 +219,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
           const SizedBox(height: 16),
 
-          // Live Preview Card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(prefs.getLabel('preview'), style: TextStyle(fontSize: 16, color: (!_showImage) ? Colors.black : Colors.grey)),
@@ -277,7 +251,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Small logo simulation
                   SvgPicture.asset('assets/icons/Logo.svg', height: 24, errorBuilder: (_,__,___) => const Icon(Icons.star, size: 24)),
                 ],
               ),

@@ -14,7 +14,6 @@ class PreferencesService extends ChangeNotifier {
 
   String _appPath = '';
 
-  // --- Keys ---
   static const _keyLanguage = 'app_language';
   static const _keyStickerSource = 'sticker_source';
   static const _keyStickerFilters = 'sticker_filters';
@@ -22,12 +21,10 @@ class PreferencesService extends ChangeNotifier {
   static const _keyWidgetFontSize = 'widget_font_size';
   static const _keyWidgetShowImage = 'widget_show_image';
 
-  // --- Legacy keys ---
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
 
-  // --- Defaults ---
   String _language = 'en';
   String _stickerSource = 'web';
   List<String> _stickerFilters = [];
@@ -36,13 +33,10 @@ class PreferencesService extends ChangeNotifier {
   bool _widgetShowImage = true;
   static const _keyWidgetTextColor = 'widget_text_color';
   static const _keyWidgetBgColor = 'widget_bg_color';
-  // int _widgetTextColor = 0xFF1E3A8A;
-  // int _widgetBackgroundColor = 0xFFFFFFFF;
 
   List<Sticker> _cachedPool = [];
 
   Future<void> init() async {
-    // sets up the service and loads all persistent data into memory at start
     _prefs = await SharedPreferences.getInstance();
     final dir = await getApplicationDocumentsDirectory();
     _appPath = dir.path;
@@ -54,13 +48,10 @@ class PreferencesService extends ChangeNotifier {
 
     _widgetFontSize = _prefs.getDouble(_keyWidgetFontSize) ?? 16.0;
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
-    // _widgetTextColor = _prefs.getInt(_keyWidgetTextColor) ?? _widgetTextColor;
-    // _widgetBackgroundColor = _prefs.getInt(_keyWidgetBgColor) ?? _widgetBackgroundColor;
 
     _loadPoolToMemory();
   }
 
-  // --- Language Dictionary ---
   static const Map<String, Map<String, String>> _labels = {
     'en': {
       'app_title': 'Stickers of meaning',
@@ -196,7 +187,6 @@ class PreferencesService extends ChangeNotifier {
     return _labels[_language]?[key] ?? _labels['en']?[key] ?? key;
   }
 
-  // --- Robust Loader ---
   void _loadPoolToMemory() {
     final String? jsonString = _prefs.getString(_poolKey);
     if (jsonString != null) {
@@ -217,7 +207,6 @@ class PreferencesService extends ChangeNotifier {
     }
   }
 
-  // --- Getters ---
   String get language => _language;
   String get stickerSource => _stickerSource;
   List<String> get stickerFilters => _stickerFilters;
@@ -232,7 +221,6 @@ class PreferencesService extends ChangeNotifier {
   Color get widgetTextColor => Color(_prefs.getInt(_keyWidgetTextColor) ?? 0xFF1E3A8A);
   Color get widgetBackgroundColor => Color(_prefs.getInt(_keyWidgetBgColor) ?? 0xFFFFFFFF);
 
-  // --- Setters ---
   Future<void> setLanguage(String value) async {
     _language = value;
     await _prefs.setString(_keyLanguage, value);
@@ -288,9 +276,6 @@ class PreferencesService extends ChangeNotifier {
   Future<void> clearHistory() async {
     await _prefs.remove(_keySeenStickers);
   }
-
-
-  // --- sticker pool management ---
 
   List<Sticker> getStickerPool() {
     return List.unmodifiable(_cachedPool);

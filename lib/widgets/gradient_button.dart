@@ -16,18 +16,15 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        // Vertical Gradient: Top (#1E3A8A) to Bottom (#3B82C4)
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF1E3A8A), // Deep Royal Blue
-            Color(0xFF3B82C4), // Lighter Steel Blue
+            Color(0xFF1E3A8A),
+            Color(0xFF3B82C4),
           ],
         ),
-        // Pill-shaped corners
         borderRadius: BorderRadius.circular(40),
-        // Subtle shadow for depth
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -39,9 +36,9 @@ class GradientButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent, // Transparent to show gradient
-          shadowColor: Colors.transparent,     // Remove built-in shadow
-          foregroundColor: Colors.white,       // White text/icon
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),

@@ -354,7 +354,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                             ? SizedBox(
                           height: 40,
                           child: OutlinedButton.icon(
-                            onPressed: () {}, // No action needed
+                            onPressed: () {},
                             style: OutlinedButton.styleFrom(
                               padding: EdgeInsets.zero,
                               side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),

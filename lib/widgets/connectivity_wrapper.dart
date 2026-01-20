@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'dart:io'; // Required for InternetAddress
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ConnectivityWrapper extends StatefulWidget {
   final Widget child;
-  final GlobalKey<NavigatorState> navigatorKey; // Receive the key
+  final GlobalKey<NavigatorState> navigatorKey;
 
   const ConnectivityWrapper({
     super.key,
@@ -45,7 +45,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   }
 
   Future<void> _handleConnectionChange(List<ConnectivityResult> results) async {
-    // 1. Basic Hardware Check (WiFi/Mobile on?)
     bool hardwareOn = results.any((result) =>
     result == ConnectivityResult.mobile ||
         result == ConnectivityResult.wifi ||
@@ -57,10 +56,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
       _showNoInternetDialog();
       return;
     }
-
-    // 2. "Real" Internet Check (Ping)
-    // If hardware is on, we double-check if we can actually reach the web.
-    // Emulators often say "WiFi On" even when offline.
     bool hasRealInternet = await _checkRealInternet();
 
     if (!hasRealInternet) {
@@ -82,7 +77,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
   void _showNoInternetDialog() {
     if (_isDialogShowing) return;
 
-    // USE GLOBAL KEY CONTEXT (This fixes the "Did not pop up" bug)
     final context = widget.navigatorKey.currentContext;
     if (context == null) return;
 
@@ -107,7 +101,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
           actions: [
             TextButton(
               onPressed: () async {
-                // Manual re-check when user clicks "Try Again"
                 final results = await Connectivity().checkConnectivity();
                 _handleConnectionChange(results);
               },
@@ -121,7 +114,6 @@ class _ConnectivityWrapperState extends State<ConnectivityWrapper> {
 
   void _dismissDialogIfOpen() {
     if (_isDialogShowing) {
-      // USE GLOBAL KEY TO POP
       final context = widget.navigatorKey.currentContext;
       if (context != null && Navigator.canPop(context)) {
         Navigator.pop(context);

@@ -23,7 +23,6 @@ class StickerIndexItem {
   });
 
   factory StickerIndexItem.fromJson(Map<String, dynamic> json) {
-    // parse sticker fields from json
     var unescape = HtmlUnescape();
     String heName = '';
     if (json['title'] != null && json['title']['rendered'] != null) {
@@ -38,7 +37,6 @@ class StickerIndexItem {
       cats = List<int>.from(json['categories']);
     }
 
-    // create sticker
     return StickerIndexItem(
       id: json['id'],
       hebrewName: heName,
@@ -71,8 +69,6 @@ class ApiService {
     }
     return uri;
   }
-
-  // --- search & fetch methods ---
 
   Future<void> fetchStickerIndex({
     required Function(List<StickerIndexItem>) onBatchLoaded,
@@ -152,7 +148,6 @@ class ApiService {
     return data.map((e) => Sticker.fromJson(e)).toList();
   }
 
-  // --- daily sticker ---
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
       WidgetService widgetService, {
@@ -192,7 +187,6 @@ class ApiService {
     return homeSticker;
   }
 
-  // --- widget logic ---
   Future<void> updateWidgetContent(
       PreferencesService prefs,
       WidgetService widgetService,
@@ -227,7 +221,6 @@ class ApiService {
     }
   }
 
-  // helpers for update widget content
   Future<Sticker> _fetchRandomFromWeb(PreferencesService prefs, List<int>? categoryIds) async {
     final allIds = await _fetchStickerIds(categoryIds: categoryIds);
     if (allIds.isEmpty) throw Exception('No stickers found');
