@@ -21,21 +21,15 @@ class StickerWidgetProvider : HomeWidgetProvider() {
     ) {
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_layout).apply {
-
-                // 1. Setup Click to Open App
                 val pendingIntent = HomeWidgetLaunchIntent.getActivity(
                     context,
                     MainActivity::class.java
                 )
                 setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
-                // 2. Get Data
                 val textToShow = widgetData.getString("sticker_text", "Open App to Load") ?: "No Text"
                 val imagePath = widgetData.getString("sticker_image", null)
                 val showImage = widgetData.getBoolean("show_image", true)
-
-                // --- ROBUST COLOR READING START ---
-                // Try reading as Int, if it fails (due to large Long values), read as Long and cast
                 val defaultTextColor = Color.parseColor("#1E3A8A")
                 val textColor = try {
                     widgetData.getInt("sticker_text_color", defaultTextColor)
@@ -49,9 +43,8 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                 } catch (e: Exception) {
                     widgetData.getLong("sticker_bg_color", defaultBgColor.toLong()).toInt()
                 }
-                // --- ROBUST COLOR READING END ---
 
-                // Font Size Logic
+
                 val rawSize = widgetData.all["sticker_font_size"]
                 val fontSize = try {
                     when (rawSize) {
@@ -63,11 +56,8 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     16.0f
                 }
 
-                // 3. Set Text & Font Size
                 setTextViewText(R.id.widget_text, textToShow)
                 setTextViewTextSize(R.id.widget_text, TypedValue.COMPLEX_UNIT_SP, fontSize)
-
-                // 4. Check Image Availability
                 var imageShown = false
                 if (showImage && imagePath != null) {
                     val file = java.io.File(imagePath)
@@ -84,37 +74,21 @@ class StickerWidgetProvider : HomeWidgetProvider() {
                     }
                 }
 
-                // 5. Apply Visibility & Colors
                 if (imageShown) {
-                    // --- IMAGE MODE ---
-                    // Show photo, hide text, hide rounded background
                     setViewVisibility(R.id.widget_image, View.VISIBLE)
                     setViewVisibility(R.id.text_content_layout, View.GONE)
                     setViewVisibility(R.id.widget_background, View.GONE)
-
-                    // Transparent root
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 } else {
-                    // --- TEXT MODE ---
-                    // Hide photo, show text
                     setViewVisibility(R.id.widget_image, View.GONE)
                     setViewVisibility(R.id.text_content_layout, View.VISIBLE)
-
-                    // Show Rounded Background & Apply Color
                     setViewVisibility(R.id.widget_background, View.VISIBLE)
 
                     val bgAlpha = Color.alpha(bgColor)
                     val bgRgb = Color.rgb(Color.red(bgColor), Color.green(bgColor), Color.blue(bgColor))
-
-                    // Apply Alpha explicitly (0-255)
                     setInt(R.id.widget_background, "setImageAlpha", bgAlpha)
-                    // Apply Color Tint (Opaque RGB)
                     setInt(R.id.widget_background, "setColorFilter", bgRgb)
-
-                    // Apply Text Color
                     setTextColor(R.id.widget_text, textColor)
-
-                    // Transparent root (so we see the rounded background underneath)
                     setInt(R.id.widget_root, "setBackgroundColor", Color.TRANSPARENT)
                 }
             }
