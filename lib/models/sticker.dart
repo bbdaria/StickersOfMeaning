@@ -1,20 +1,18 @@
 import 'package:html_unescape/html_unescape.dart';
 
 class Sticker {
-  final int id;         // sticker Id
-  final String text;    // hebrew name
-  final String content; // hebrew quote
-  final String imageUrl;// image url
-  final String postUrl; // web post url
-  final DateTime? date; // date of death
-
+  final int id;
+  final String text;
+  final String content;
+  final String imageUrl;
+  final String postUrl;
+  final DateTime? date;
   final String nameInEnglish;
   final String nameInHebrew;
-  final String enQuote; // sticker quote in english
-  final String heQuote; // sticker quote in hebrew
-
+  final String enQuote;
+  final String heQuote;
   final String? localImagePath;
-  final List<int> categories; // all filters
+  final List<int> categories;
 
   Sticker({
     required this.id,
@@ -28,16 +26,15 @@ class Sticker {
     this.enQuote = '',
     this.heQuote = '',
     this.localImagePath,
-    this.categories = const [], // Default empty
+    this.categories = const [],
   });
 
   factory Sticker.fromJson(Map<String, dynamic> json) {
+    // Creates a sticker object from the JSON of an API response
     var unescape = HtmlUnescape();
     String cleanText(dynamic input) {
       if (input == null) return '';
       String s = input.toString();
-
-      // remove HTML tags via regex
       s = s.replaceAll(RegExp(r'<[^>]*>'), '');
       return unescape.convert(s).trim();
     }

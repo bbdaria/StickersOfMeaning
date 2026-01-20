@@ -102,7 +102,14 @@ class StickerWidgetProvider : HomeWidgetProvider() {
 
                     // Show Rounded Background & Apply Color
                     setViewVisibility(R.id.widget_background, View.VISIBLE)
-                    setInt(R.id.widget_background, "setColorFilter", bgColor)
+
+                    val bgAlpha = Color.alpha(bgColor)
+                    val bgRgb = Color.rgb(Color.red(bgColor), Color.green(bgColor), Color.blue(bgColor))
+
+                    // Apply Alpha explicitly (0-255)
+                    setInt(R.id.widget_background, "setImageAlpha", bgAlpha)
+                    // Apply Color Tint (Opaque RGB)
+                    setInt(R.id.widget_background, "setColorFilter", bgRgb)
 
                     // Apply Text Color
                     setTextColor(R.id.widget_text, textColor)

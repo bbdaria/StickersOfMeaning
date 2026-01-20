@@ -3,7 +3,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
 import '../services/widget_service.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 
 
@@ -197,7 +196,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
             ),
 
           const Divider(),
-          // Opacity Slider
           ListTile(
             title: Text(prefs.getLabel('background_opacity'), style: TextStyle(fontSize: 16),),
             subtitle: Text('${(_opacity * 100).toInt()}%'),
