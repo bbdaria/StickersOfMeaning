@@ -11,6 +11,7 @@ import '../services/widget_service.dart';
 import 'preferences_screen.dart';
 import 'sticker_search_screen.dart';
 import 'widget_settings_screen.dart';
+import '../widgets/set_as_widget_button.dart'; // Import the new widget
 
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/';
@@ -23,7 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<Sticker>? _futureSticker;
-  int? _currentWidgetStickerId;
+  bool _isUpdatingWidget = false;
 
   @override
   void initState() {
@@ -37,21 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final widgetService = context.read<WidgetService>();
 
     setState(() {
-      _futureSticker = api.getDailySticker(prefs, widgetService).then((sticker) async {
-        await _loadWidgetStickerId();
-        return sticker;
-      });
+      // Just load the sticker; widget ID is now handled by Provider watching
+      _futureSticker = api.getDailySticker(prefs, widgetService);
     });
-  }
-
-  Future<void> _loadWidgetStickerId() async {
-    final widgetService = context.read<WidgetService>();
-    final id = await widgetService.getWidgetStickerId();
-    if (mounted) {
-      setState(() {
-        _currentWidgetStickerId = id;
-      });
-    }
   }
 
   Future<void> _refreshSticker() async {
@@ -59,16 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       if (_futureSticker != null) await _futureSticker;
     } catch (e) {}
-  }
-
-  Future<void> _sendToWidget(Sticker sticker) async {
-    final widgetService = context.read<WidgetService>();
-    await widgetService.updateStickerWidget(sticker);
-    if (!mounted) return;
-
-    setState(() {
-      _currentWidgetStickerId = sticker.id;
-    });
   }
 
   Widget _buildMenuButton({
@@ -161,6 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
+    // 3. Watch global widget ID state
+    final currentWidgetId = prefs.widgetStickerId;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -240,7 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 final sticker = snapshot.data!;
-                final isAlreadyInWidget = _currentWidgetStickerId == sticker.id;
+                // Check using global state
+                final isAlreadyInWidget = currentWidgetId == sticker.id;
 
                 String displayName = prefs.language == 'en'
                     ? (sticker.nameInEnglish.isNotEmpty ? sticker.nameInEnglish : sticker.text)
@@ -318,66 +300,69 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 10),
-
                                 Expanded(
-                                  child: isAlreadyInWidget
-                                      ? SizedBox(
-                                    height: 40,
-                                    child: OutlinedButton.icon(
-                                      onPressed: () {},
-                                      style: OutlinedButton.styleFrom(
-                                        padding: EdgeInsets.zero,
-                                        side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                      ),
-                                      icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
-                                      label: Text(
-                                        prefs.getLabel('sticker_in_widget'),
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Color(0xFF1E3A8A),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                      : Container(
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      gradient: const LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Color(0xFF1E3A8A),
-                                          Color(0xFF3B82C4)
-                                        ],
-                                      ),
-                                    ),
-                                    child: ElevatedButton(
-                                      onPressed: () => _sendToWidget(sticker),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.transparent,
-                                        shadowColor: Colors.transparent,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                      child: Text(
-                                        prefs.getLabel('send_to_widget'),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  child: StickerWidgetButton(sticker: sticker),
                                 ),
+                                // Expanded(
+                                //   child: isAlreadyInWidget
+                                //       ? SizedBox(
+                                //     height: 40,
+                                //     child: OutlinedButton.icon(
+                                //       onPressed: () {},
+                                //       style: OutlinedButton.styleFrom(
+                                //         padding: EdgeInsets.zero,
+                                //         side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
+                                //         shape: RoundedRectangleBorder(
+                                //           borderRadius: BorderRadius.circular(20),
+                                //         ),
+                                //       ),
+                                //       icon: const Icon(Icons.check, size: 16, color: Color(0xFF1E3A8A)),
+                                //       label: Text(
+                                //         prefs.getLabel('sticker_in_widget'),
+                                //         textAlign: TextAlign.center,
+                                //         style: const TextStyle(
+                                //           color: Color(0xFF1E3A8A),
+                                //           fontWeight: FontWeight.bold,
+                                //           fontSize: 11,
+                                //         ),
+                                //       ),
+                                //     ),
+                                //   )
+                                //       : Container(
+                                //     height: 40,
+                                //     decoration: BoxDecoration(
+                                //       borderRadius: BorderRadius.circular(20),
+                                //       gradient: const LinearGradient(
+                                //         begin: Alignment.topCenter,
+                                //         end: Alignment.bottomCenter,
+                                //         colors: [
+                                //           Color(0xFF1E3A8A),
+                                //           Color(0xFF3B82C4)
+                                //         ],
+                                //       ),
+                                //     ),
+                                //     child: ElevatedButton(
+                                //       // Disable button if updating
+                                //       onPressed: _isUpdatingWidget ? null : () => _sendToWidget(sticker),
+                                //       style: ElevatedButton.styleFrom(
+                                //         backgroundColor: Colors.transparent,
+                                //         shadowColor: Colors.transparent,
+                                //         shape: RoundedRectangleBorder(
+                                //           borderRadius: BorderRadius.circular(20),
+                                //         ),
+                                //         padding: EdgeInsets.zero,
+                                //       ),
+                                //       child: Text(
+                                //         prefs.getLabel('send_to_widget'),
+                                //         style: const TextStyle(
+                                //           color: Colors.white,
+                                //           fontWeight: FontWeight.bold,
+                                //           fontSize: 13,
+                                //         ),
+                                //       ),
+                                //     ),
+                                //   ),
+                                // ),
                               ],
                             ),
                           ),
@@ -436,25 +421,19 @@ class _HomeScreenState extends State<HomeScreen> {
               title: prefs.getLabel('your_collection'),
               subtitle: prefs.getLabel('explore_collection'),
               icon: Icons.collections,
-              onTap: () => Navigator.pushNamed(context, StickerPoolScreen.routeName).then((_) {
-                _loadWidgetStickerId();
-              }),
+              onTap: () => Navigator.pushNamed(context, StickerPoolScreen.routeName),
             ),
             _buildMenuButton(
               title: prefs.getLabel('customize_widget'),
               subtitle: prefs.getLabel('settings_customization'),
               icon: Icons.color_lens,
-              onTap: () => Navigator.pushNamed(context, WidgetSettingsScreen.routeName).then((_) {
-                _loadWidgetStickerId();
-              }),
+              onTap: () => Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
             ),
             _buildMenuButton(
               title: prefs.getLabel('content_preferences'),
               subtitle: prefs.getLabel('what_to_see'),
               icon: Icons.widgets,
-              onTap: () => Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName).then((_) {
-                _loadWidgetStickerId();
-              }),
+              onTap: () => Navigator.pushNamed(context, DailyStickerSettingsScreen.routeName),
             ),
             _buildMenuButton(
               title: prefs.getLabel('visit_site'),

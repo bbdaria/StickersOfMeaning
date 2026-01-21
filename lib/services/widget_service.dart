@@ -93,6 +93,7 @@ class WidgetService {
     await prefs.setString('latest_sticker_content', sticker.content);
     await prefs.setString('latest_sticker_title', sticker.text);
     await prefs.setString('saved_sticker_image_url', sticker.imageUrl);
+
     final int textColor = prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
     final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
     final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
