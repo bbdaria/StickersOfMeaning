@@ -80,6 +80,44 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
     }
   }
 
+  double _calculatePreviewFontSize(
+      String text,
+      double targetSize,
+      double maxWidth,
+      double maxHeight,
+      TextDirection textDirection
+      ) {
+    double size = targetSize;
+    const double minSize = 10.0;
+
+    // Create a TextPainter to measure the text
+    while (size >= minSize) {
+      final TextPainter textPainter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.bold,
+            fontFamily: null, // Uses default font
+          ),
+        ),
+        maxLines: 10,
+        textDirection: textDirection,
+      );
+
+      textPainter.layout(minWidth: 0, maxWidth: maxWidth);
+
+      // If it fits vertically, we found our optimal size
+      if (textPainter.height <= maxHeight) {
+        return size;
+      }
+
+      // If not, shrink and try again
+      size -= 1.0;
+    }
+    return minSize;
+  }
+
   Widget _buildColorSelector(String title, List<Color> colors, int selectedValue, Function(int) onSelected, double size, {bool enabled = true}) {
     return Opacity(
       opacity: enabled ? 1.0 : 0.5,
@@ -146,6 +184,18 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
+    final textDirection = prefs.language == 'en' ? TextDirection.ltr : TextDirection.rtl;
+
+    final double accuratePreviewFontSize = _showImage
+        ? _fontSize
+        : _calculatePreviewFontSize(
+        prefs.getLabel('widget_preview'),
+        _fontSize,
+        318.0,
+        66.0,
+        textDirection
+    );
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -243,7 +293,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
                     prefs.getLabel('widget_preview'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: _fontSize,
+                      fontSize: accuratePreviewFontSize,
                       color: Color(_textColor),
                       fontWeight: FontWeight.bold,
                     ),
