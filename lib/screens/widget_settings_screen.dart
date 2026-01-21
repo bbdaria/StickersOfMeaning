@@ -90,7 +90,6 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
     double size = targetSize;
     const double minSize = 10.0;
 
-    // Create a TextPainter to measure the text
     while (size >= minSize) {
       final TextPainter textPainter = TextPainter(
         text: TextSpan(
@@ -98,7 +97,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
           style: TextStyle(
             fontSize: size,
             fontWeight: FontWeight.bold,
-            fontFamily: null, // Uses default font
+            fontFamily: null,
           ),
         ),
         maxLines: 10,
@@ -107,12 +106,10 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
 
       textPainter.layout(minWidth: 0, maxWidth: maxWidth);
 
-      // If it fits vertically, we found our optimal size
       if (textPainter.height <= maxHeight) {
         return size;
       }
 
-      // If not, shrink and try again
       size -= 1.0;
     }
     return minSize;
