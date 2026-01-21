@@ -272,28 +272,18 @@ class ApiService {
     await prefs.removeFromPool(id);
 
     if (isWidgetTarget && isPoolMode) {
+      // Check if pool became empty
       if (prefs
           .getStickerPool()
           .isEmpty) {
+        // Switch to Web so future random refreshes actually work
         await prefs.setStickerSource('web');
-        await updateWidgetContent(prefs, widgetService);
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(prefs.getLabel('collection_empty')),
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      } else {
-        await updateWidgetContent(prefs, widgetService);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Removed. Widget updated with new sticker.'),
-              duration: Duration(seconds: 2),
+              duration: const Duration(seconds: 4),
             ),
           );
         }

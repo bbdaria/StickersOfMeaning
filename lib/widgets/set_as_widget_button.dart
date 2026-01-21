@@ -26,37 +26,17 @@ class _StickerWidgetButtonState extends State<StickerWidgetButton> {
 
     setState(() => _isUpdating = true);
 
-    // Visual Feedback: Loading
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(children: [
-          SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          SizedBox(width: 16),
-          Text("Updating Widget...")
-        ]),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
     try {
       final widgetService = context.read<WidgetService>();
       final prefs = context.read<PreferencesService>();
 
       await widgetService.updateStickerWidget(widget.sticker);
-
-      // Update Global State
       await prefs.setWidgetStickerId(widget.sticker.id);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Widget Updated!")),
-        );
-      }
     } catch (e) {
       if (mounted) {
+        final prefs = context.read<PreferencesService>();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(content: Text(prefs.getLabel('could_not_update_widget')))
         );
       }
     } finally {
@@ -68,7 +48,6 @@ class _StickerWidgetButtonState extends State<StickerWidgetButton> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the global preference state
     final prefs = context.watch<PreferencesService>();
     final isAlreadyInWidget = prefs.widgetStickerId == widget.sticker.id;
 
@@ -86,11 +65,10 @@ class _StickerWidgetButtonState extends State<StickerWidgetButton> {
     }
 
     if (isAlreadyInWidget) {
-      // "In Widget" State (Outlined Button)
       return SizedBox(
         height: 40,
         child: OutlinedButton.icon(
-          onPressed: () {}, // No action needed
+          onPressed: () {},
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.zero,
             side: const BorderSide(color: Color(0xFF1E3A8A), width: 1),
@@ -111,7 +89,6 @@ class _StickerWidgetButtonState extends State<StickerWidgetButton> {
         ),
       );
     } else {
-      // "Set as Widget" State (Gradient Button)
       return Container(
         height: 40,
         decoration: BoxDecoration(

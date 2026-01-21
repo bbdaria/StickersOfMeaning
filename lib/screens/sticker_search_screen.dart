@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/sticker.dart';
 import '../services/api_service.dart';
-import '../services/widget_service.dart';
 import 'package:html/parser.dart' show parse;
 import '../services/preferences_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/set_as_widget_button.dart';
-
-
 
 class StickerSearchScreen extends StatefulWidget {
   static const String routeName = '/sticker_search';
@@ -63,12 +60,14 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       await api.fetchStickerIndex(
         onBatchLoaded: (newBatch) {
           if (!mounted) return;
+
           setState(() {
             _searchIndex.addAll(newBatch);
-            if (_controller.text.isNotEmpty || _selectedCategories.isNotEmpty) {
-              _applyFilter();
-            }
           });
+
+          if (_controller.text.isNotEmpty || _selectedCategories.isNotEmpty) {
+            _applyFilter(refreshExisting: false);
+          }
         },
       );
       if (mounted) setState(() => _isIndexLoading = false);
@@ -78,7 +77,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     }
   }
 
-  void _applyFilter() {
+  void _applyFilter({bool refreshExisting = true}) {
     final query = _controller.text.trim().toLowerCase();
 
     if (query.isEmpty && _selectedCategories.isEmpty) {
@@ -90,31 +89,41 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
       return;
     }
 
+    final newFilteredIds = _searchIndex.where((item) {
+      if (_selectedCategories.isNotEmpty) {
+        if (item.categoryIds.isEmpty) return false;
+        bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
+        if (!hasCategory) return false;
+      }
+
+      if (query.isNotEmpty) {
+        bool nameMatch =
+            item.hebrewName.toLowerCase().contains(query) ||
+                item.englishName.toLowerCase().contains(query);
+        if (!nameMatch) return false;
+      }
+      return true;
+    }).map((item) => item.id).toList();
+
     setState(() {
       _hasSearched = true;
-      _filteredIds = _searchIndex.where((item) {
-        if (_selectedCategories.isNotEmpty) {
-          if (item.categoryIds.isEmpty) return false;
-          bool hasCategory = item.categoryIds.any((id) => _selectedCategories.contains(id));
-          if (!hasCategory) return false;
-        }
-
-        if (query.isNotEmpty) {
-          bool nameMatch =
-              item.hebrewName.toLowerCase().contains(query) ||
-                  item.englishName.toLowerCase().contains(query);
-          if (!nameMatch) return false;
-        }
-        return true;
-      }).map((item) => item.id).toList();
+      _filteredIds = newFilteredIds;
     });
 
-    _displayedStickers.clear();
-
-    if (_filteredIds.isNotEmpty) {
-      _loadMoreStickers();
+    if (refreshExisting) {
+      _displayedStickers.clear();
+      if (_filteredIds.isNotEmpty) {
+        _loadMoreStickers();
+      } else {
+        _fetchServerFallback();
+      }
     } else {
-      _fetchServerFallback();
+      if (_displayedStickers.isEmpty && _filteredIds.isNotEmpty) {
+        _loadMoreStickers();
+      }
+      else if (_displayedStickers.length < 20 && _filteredIds.length > _displayedStickers.length) {
+        _loadMoreStickers();
+      }
     }
   }
 
@@ -160,6 +169,8 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   Future<void> _fetchServerFallback() async {
+    if (_isIndexLoading) return;
+
     setState(() => _isLoadingMore = true);
     try {
       final api = context.read<ApiService>();
@@ -419,7 +430,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           controller: _controller,
                           textInputAction: TextInputAction.search,
                           textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-                          onChanged: (_) => _applyFilter(),
+                          onChanged: (_) => _applyFilter(refreshExisting: true),
                           decoration: InputDecoration(
                             labelText: prefs.getLabel('search_hint'),
                             hintText: prefs.getLabel('type_to_search'),
@@ -460,9 +471,8 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                           ),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_forward, color: Colors
-                              .white),
-                          onPressed: _applyFilter,
+                          icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                          onPressed: () => _applyFilter(refreshExisting: true),
                         ),
                       ),
                     ],
@@ -499,7 +509,7 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
                                         } else {
                                           _selectedCategories.add(entry.key);
                                         }
-                                        _applyFilter();
+                                        _applyFilter(refreshExisting: true);
                                       });
                                     },
                                   );

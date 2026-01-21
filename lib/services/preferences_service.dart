@@ -116,6 +116,7 @@ class PreferencesService extends ChangeNotifier {
       'preview': "Preview",
       'widget_preview': "Widget Preview",
       'background_opacity': "Background Opacity",
+      'could_not_update_widget': "Could not update the widget",
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -180,6 +181,7 @@ class PreferencesService extends ChangeNotifier {
       'preview': "תצוגת דמה",
       'widget_preview': "הדמיית המדבקה",
       'background_opacity': "שקיפות הרקע",
+      'could_not_update_widget': "לא ניתן לעדכן את הוידג'ט",
     }
   };
 

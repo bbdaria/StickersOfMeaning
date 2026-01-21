@@ -21,7 +21,6 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
   List<Sticker> _filteredPool = [];
   final TextEditingController _searchController = TextEditingController();
 
-  // Lock to prevent double taps while updating
   bool _isUpdatingWidget = false;
 
   @override
@@ -65,38 +64,16 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
     _loadPool();
   }
 
-  // --- ENHANCED UPDATE MECHANISM ---
   Future<void> _setAsWidget(Sticker sticker) async {
     if (_isUpdatingWidget) return;
 
     setState(() => _isUpdatingWidget = true);
 
-    // 1. Visual Feedback: Loading SnackBar
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(children: [
-          SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          SizedBox(width: 16),
-          Text("Updating Widget...")
-        ]),
-        duration: Duration(seconds: 1), // Keeps it visible until we replace it
-      ),
-    );
-
     try {
-      // 2. Perform the Update
       await context.read<WidgetService>().updateStickerWidget(sticker);
 
-      // 3. Update Global State (Syncs UI across the app)
       if (mounted) {
         await context.read<PreferencesService>().setWidgetStickerId(sticker.id);
-
-        // 4. Success Feedback
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Widget Updated!")),
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -116,7 +93,7 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
   Widget build(BuildContext context) {
     final prefs = context.watch<PreferencesService>();
     final isEnglish = prefs.language == 'en';
-    final currentWidgetId = prefs.widgetStickerId; // Watch global state
+    final currentWidgetId = prefs.widgetStickerId;
 
     return Scaffold(
       appBar: PreferredSize(
@@ -232,11 +209,9 @@ class _StickerPoolScreenState extends State<StickerPoolScreen> {
                       itemBuilder: (context) => [
                         PopupMenuItem(
                           value: 'widget',
-                          // Disable option if it's already the active widget
                           enabled: !isInWidget,
                           child: Row(
                             children: [
-                              // Visual checkmark if active, Send icon if not
                               Icon(
                                   isInWidget ? Icons.check_circle : Icons.send,
                                   size: 20,
