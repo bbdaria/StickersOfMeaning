@@ -254,6 +254,7 @@ class _WidgetSettingsScreenState extends State<WidgetSettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 10)
         ],
       ),
     );

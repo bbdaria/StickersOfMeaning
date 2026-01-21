@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildMenuButton(
               title: prefs.getLabel('customize_widget'),
               subtitle: prefs.getLabel('settings_customization'),
-              icon: Icons.color_lens,
+              icon: Icons.palette,
               onTap: () => Navigator.pushNamed(context, WidgetSettingsScreen.routeName),
             ),
             _buildMenuButton(

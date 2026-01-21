@@ -218,6 +218,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                 ),
                 onTap: _updateWidgetOnly,
               ),
+              const SizedBox(height: 10)
             ],
           );
         },

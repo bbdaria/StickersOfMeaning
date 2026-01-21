@@ -52,7 +52,7 @@ class PreferencesScreen extends StatelessWidget {
               side: const BorderSide(color: Colors.grey, width: 1.1),
             ),
             child: ListTile(
-              leading: const Icon(Icons.calendar_today, color: Color(0xFF001a7e)),
+              leading: const Icon(Icons.widgets, color: Color(0xFF001a7e)),
               title: Text(prefs.getLabel('sticker_preferences')),
               subtitle: Text(prefs.getLabel('source_filters')),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -71,7 +71,7 @@ class PreferencesScreen extends StatelessWidget {
               side: const BorderSide(color: Colors.grey, width: 1.1),
             ),
             child: ListTile(
-              leading: const Icon(Icons.widgets, color: Color(0xFF001a7e)),
+              leading: const Icon(Icons.palette, color: Color(0xFF001a7e)),
               title: Text(prefs.getLabel('widget_customization')),
               subtitle: Text(prefs.getLabel('font_size_image')),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
