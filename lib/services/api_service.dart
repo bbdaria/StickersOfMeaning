@@ -203,7 +203,17 @@ class ApiService {
         }
 
         if (pool.isNotEmpty) {
-          widgetSticker = pool[Random().nextInt(pool.length)];
+          final currentWidgetId = prefs.widgetStickerId;
+          List<Sticker> candidates = pool;
+
+          if (pool.length > 1 && currentWidgetId != null) {
+            final filteredCandidates = pool.where((s) => s.id != currentWidgetId).toList();
+            if (filteredCandidates.isNotEmpty) {
+              candidates = filteredCandidates;
+            }
+          }
+
+          widgetSticker = candidates[Random().nextInt(candidates.length)];
         } else {
           widgetSticker = await _fetchRandomFromWeb(prefs, filters);
         }
@@ -265,18 +275,15 @@ class ApiService {
 
   Future<void> safeRemoveFromPool(BuildContext context, int id) async {
     final prefs = context.read<PreferencesService>();
-    final widgetService = context.read<WidgetService>();
     final isWidgetTarget = (id == prefs.widgetStickerId);
     final isPoolMode = (prefs.stickerSource == 'pool');
 
     await prefs.removeFromPool(id);
 
     if (isWidgetTarget && isPoolMode) {
-      // Check if pool became empty
       if (prefs
           .getStickerPool()
           .isEmpty) {
-        // Switch to Web so future random refreshes actually work
         await prefs.setStickerSource('web');
 
         if (context.mounted) {

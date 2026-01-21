@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
+import '../services/background_service.dart';
+import 'package:workmanager/workmanager.dart';
 
 class DailyStickerSettingsScreen extends StatefulWidget {
   static const routeName = '/daily-settings';
@@ -15,6 +17,7 @@ class DailyStickerSettingsScreen extends StatefulWidget {
 class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen> {
   Map<int, String> _allWebCategories = {};
   bool _isLoadingCats = true;
+  int _refreshInterval = 15;
 
   @override
   void initState() {
@@ -22,13 +25,36 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
     _loadCategories();
   }
 
+
+  Future<void> _updateRefreshInterval(int? newValue) async {
+    if (newValue == null) return;
+
+    setState(() => _refreshInterval = newValue);
+
+    final prefs = context.read<PreferencesService>();
+    await prefs.setRefreshInterval(newValue);
+    await BackgroundService.scheduleUpdate(newValue);
+  }
+
   Future<void> _loadCategories() async {
     try {
+      final prefs = context.read<PreferencesService>();
       final cats = await context.read<ApiService>().fetchCategories();
+
       if (mounted) {
+        int loadedInterval = prefs.getRefreshInterval();
+
+        const allowedValues = [0, 15, 60, 720, 1440];
+
+        if (!allowedValues.contains(loadedInterval)) {
+          loadedInterval = 15;
+          prefs.setRefreshInterval(loadedInterval);
+        }
+
         setState(() {
           _allWebCategories = cats;
           _isLoadingCats = false;
+          _refreshInterval = loadedInterval;
         });
       }
     } catch (e) {
@@ -208,7 +234,34 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 24),
-
+              Text(
+                prefs.getLabel('auto_refresh_widget'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    isExpanded: true,
+                    value: _refreshInterval,
+                    items: [
+                      DropdownMenuItem(value: 0, child: Text(prefs.getLabel('manual_refresh_opt'))),
+                      DropdownMenuItem(value: 15, child: Text(prefs.getLabel('15min_refresh_opt'))),
+                      DropdownMenuItem(value: 60, child: Text(prefs.getLabel('1h_refresh_opt'))),
+                      DropdownMenuItem(value: 720, child: Text(prefs.getLabel('12h_refresh_opt'))),
+                      DropdownMenuItem(value: 1440, child: Text(prefs.getLabel('24h_refresh_opt'))),
+                    ],
+                    onChanged: _updateRefreshInterval,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               ListTile(
                 title: Text(prefs.getLabel('refresh_widget')),
                 leading: const Icon(Icons.refresh, color: Color(0xFF1E3A8A)),
@@ -218,7 +271,20 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                 ),
                 onTap: _updateWidgetOnly,
               ),
-              const SizedBox(height: 10)
+              const SizedBox(height: 10),
+
+              // >>>>>>>>>>>>>> TEST BUTTON:
+              // TextButton(
+              //   onPressed: () {
+              //     Workmanager().registerOneOffTask(
+              //       "test_task_${DateTime.now().millisecondsSinceEpoch}",
+              //       "widgetUpdateTask",
+              //       constraints: Constraints(networkType: NetworkType.connected),
+              //     );
+              //     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Triggered Background Test!')));
+              //   },
+              //   child: const Text("Test Background Logic Now"),
+              // )
             ],
           );
         },

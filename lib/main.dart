@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app.dart';
+import 'package:stickers_of_meaning/services/background_service.dart';
 import 'services/api_service.dart';
 import 'services/preferences_service.dart';
 import 'services/widget_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await BackgroundService.init();
   final preferencesService = PreferencesService();
   await preferencesService.init();
 

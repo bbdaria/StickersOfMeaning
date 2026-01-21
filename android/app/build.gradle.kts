@@ -36,3 +36,28 @@ android {
 flutter {
     source = "../.."
 }
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = file("../build")
+subprojects {
+    project.buildDir = file("../build/${project.name}")
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+subprojects {
+    project.configurations.all {
+        resolutionStrategy {
+            force("androidx.work:work-runtime:2.9.0")
+            force("androidx.work:work-runtime-ktx:2.9.0")
+        }
+    }
+}
+
+

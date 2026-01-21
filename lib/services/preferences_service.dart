@@ -9,6 +9,7 @@ import '../models/sticker.dart';
 import 'package:flutter/material.dart';
 
 class PreferencesService extends ChangeNotifier {
+  static const String _keyWidgetRefreshInterval = 'widget_refresh_interval';
   static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
 
@@ -117,6 +118,12 @@ class PreferencesService extends ChangeNotifier {
       'widget_preview': "Widget Preview",
       'background_opacity': "Background Opacity",
       'could_not_update_widget': "Could not update the widget",
+      'auto_refresh_widget': "Auto Refresh Widget",
+      'manual_refresh_opt': "No refresh (Manual only)",
+      '1h_refresh_opt': "Every 1 hour",
+      '12h_refresh_opt': "Every 12 hours",
+      '24h_refresh_opt': "Every 24 hours",
+      '15min_refresh_opt': "Every 15 minutes",
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -182,6 +189,12 @@ class PreferencesService extends ChangeNotifier {
       'widget_preview': "הדמיית המדבקה",
       'background_opacity': "שקיפות הרקע",
       'could_not_update_widget': "לא ניתן לעדכן את הוידג'ט",
+      'auto_refresh_widget': "עדכון אוטומטי של הוידג'ט",
+      'manual_refresh_opt': "עדכון ידני",
+      '1h_refresh_opt': "כל שעה",
+      '12h_refresh_opt': "כל 12 שעות",
+      '24h_refresh_opt': "כל יום",
+      '15min_refresh_opt': "כל 15 דקות",
     }
   };
 
@@ -384,5 +397,14 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setWidgetOpacity(double opacity) async {
     await _prefs.setDouble('widget_opacity', opacity);
+  }
+
+  int getRefreshInterval() {
+    return _prefs.getInt(_keyWidgetRefreshInterval) ?? 0;
+  }
+
+  Future<void> setRefreshInterval(int minutes) async {
+    await _prefs.setInt(_keyWidgetRefreshInterval, minutes);
+    notifyListeners();
   }
 }
