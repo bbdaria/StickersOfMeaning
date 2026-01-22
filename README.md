@@ -1,6 +1,6 @@
 # Stickers of Meaning
 
-[**View App Poster**](assets/poster.png)
+[![App Poster](https://img.shields.io/badge/View-Poster-blue)](assets/poster.png)
 
 ## Description
 
