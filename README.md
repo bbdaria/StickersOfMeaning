@@ -1,6 +1,6 @@
 # Stickers of Meaning
 
-![App Poster](assets/poster.png)
+[**View App Poster**](assets/poster.png)
 
 ## Description
 
