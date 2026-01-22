@@ -37,7 +37,7 @@ This project is a Flutter application.
 
 1.  **Clone the repository**:
     ```bash
-    git clone [https://github.com/yourusername/stickers-of-meaning.git](https://github.com/yourusername/stickers-of-meaning.git)
+    git clone [https://github.com/bbdaria/stickers-of-meaning.git](https://github.com/bbdaria/stickers-of-meaning.git)
     ```
 2.  **Open the project**: Open the cloned folder in **Android Studio**.
 3.  **Connect a device**: Connect a physical Android device via USB or launch an Android Emulator (Virtual Device).
