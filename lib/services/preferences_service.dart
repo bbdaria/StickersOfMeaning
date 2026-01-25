@@ -57,12 +57,12 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
     _loadPoolToMemory();
+    await reload();
     _startAutoReloadTimer();
   }
 
   void _startAutoReloadTimer() {
     _autoReloadTimer?.cancel();
-    // Check every 2 seconds if the widget was updated in the background
     _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       reload();
     });
@@ -71,10 +71,7 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   File get _widgetIdFile => File('$_appPath/widget_id.txt');
 
   Future<void> reload() async {
-    // 1. Try standard reload
     await _prefs.reload();
-
-    // 2. Check the raw file which bypasses the SharedPreferences cache
     try {
       final file = _widgetIdFile;
       if (await file.exists()) {
@@ -82,15 +79,11 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
         final int? fileId = int.tryParse(content);
         final int? memId = _prefs.getInt(_keyWidgetStickerId);
 
-        // If file has a new ID that SharedPreferences doesn't know about yet
         if (fileId != null && fileId != memId) {
           await _prefs.setInt(_keyWidgetStickerId, fileId);
           notifyListeners();
         }
-        // Or if SharedPreferences updated but we missed the notification
         else if (fileId != null) {
-          // just to be safe, sometimes notifyListeners ensures the UI rebuilds
-          // even if the value technically matches
           final int? currentMemId = _prefs.getInt(_keyWidgetStickerId);
           if(currentMemId != fileId) {
             notifyListeners();
@@ -435,15 +428,9 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
 
   int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
 
-  // Future<void> setWidgetStickerId(int id) async {
-  //   await _prefs.setInt(_keyWidgetStickerId, id);
-  //   notifyListeners();
-  // }
-
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
 
-    // Write to a FILE for reliable cross-isolate sync
     try {
       final file = _widgetIdFile;
       await file.writeAsString(id.toString());

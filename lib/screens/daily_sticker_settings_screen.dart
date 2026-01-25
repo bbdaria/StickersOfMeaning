@@ -35,7 +35,6 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
       final widgetService = context.read<WidgetService>();
       final apiService = context.read<ApiService>();
 
-      // Call the API service directly (Same logic as background task, but runs NOW)
       await apiService.updateWidgetContent(prefs, widgetService);
 
       if (mounted) {
@@ -314,7 +313,7 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
                       const Text("Developer Test Zone", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
-                        onPressed: _forceUpdateNow, // CALLS THE DIRECT UPDATE
+                        onPressed: _forceUpdateNow,
                         icon: const Icon(Icons.bolt, color: Colors.white),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                         label: const Text("Force Immediate Update", style: TextStyle(color: Colors.white)),
