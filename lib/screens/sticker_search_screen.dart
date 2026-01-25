@@ -46,7 +46,9 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       _loadMoreStickers();
     }
   }
@@ -415,200 +417,211 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
           child: AppBar(title: Text(prefs.getLabel('sticker_search'))),
         ),
       ),
-      body: Column(
-        children: [
-          Material(
-            elevation: 2,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+      // CHANGED: Used CustomScrollView to allow header to scroll with keyboard open
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverToBoxAdapter(
+            child: Material(
+              elevation: 2,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _controller,
+                            textInputAction: TextInputAction.search,
+                            textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                            onChanged: (_) => _applyFilter(refreshExisting: true),
+                            decoration: InputDecoration(
+                              labelText: prefs.getLabel('search_hint'),
+                              hintText: prefs.getLabel('type_to_search'),
+                              hintStyle: const TextStyle(color: Color(0xFF8A8A8A)),
+                              prefixIcon: const Icon(Icons.search, color: Color(0xFF0B2A6F)),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: Color(0xFF0B2A6F), width: 2),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: Color(0xFF0B2A6F)),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)],
+                            ),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                            onPressed: () => _applyFilter(refreshExisting: true),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  ExpansionTile(
+                    title: Text(prefs.getLabel('filters')),
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          textInputAction: TextInputAction.search,
-                          textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-                          onChanged: (_) => _applyFilter(refreshExisting: true),
-                          decoration: InputDecoration(
-                            labelText: prefs.getLabel('search_hint'),
-                            hintText: prefs.getLabel('type_to_search'),
-                            hintStyle: const TextStyle(
-                                color: Color(0xFF8A8A8A)),
-                            prefixIcon: const Icon(
-                                Icons.search, color: Color(0xFF0B2A6F)),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 16),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF0B2A6F)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF0B2A6F), width: 2),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                  color: Color(0xFF0B2A6F)),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 300),
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _availableCategories.isEmpty
+                                    ? Text(prefs.getLabel('loading_topics'))
+                                    : Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _availableCategories.entries.map((entry) {
+                                    final isSelected = _selectedCategories.contains(entry.key);
+                                    return _buildGradientChip(
+                                      entry.value,
+                                      isSelected,
+                                          () {
+                                        setState(() {
+                                          if (isSelected) {
+                                            _selectedCategories.remove(entry.key);
+                                          } else {
+                                            _selectedCategories.add(entry.key);
+                                          }
+                                          _applyFilter(refreshExisting: true);
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Color(0xFF1E3A8A), Color(0xFF3B82C4)],
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                          onPressed: () => _applyFilter(refreshExisting: true),
                         ),
                       ),
                     ],
                   ),
-                ),
-
-                ExpansionTile(
-                  title: Text(prefs.getLabel('filters')),
-                  children: [
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _availableCategories.isEmpty
-                                  ? Text(prefs.getLabel('loading_topics'))
-                                  : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _availableCategories.entries.map((
-                                    entry) {
-                                  final isSelected = _selectedCategories
-                                      .contains(entry.key);
-                                  return _buildGradientChip(
-                                    entry.value,
-                                    isSelected,
-                                        () {
-                                      setState(() {
-                                        if (isSelected) {
-                                          _selectedCategories.remove(entry.key);
-                                        } else {
-                                          _selectedCategories.add(entry.key);
-                                        }
-                                        _applyFilter(refreshExisting: true);
-                                      });
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
-          Expanded(
-            child: _buildResults(),
-          ),
+          // CHANGED: Use a sliver builder instead of expanded widget
+          _buildResultsSliver(),
         ],
       ),
     );
   }
 
-  Widget _buildResults() {
+  Widget _buildResultsSliver() {
     final prefs = Provider.of<PreferencesService>(context);
     final isEnglish = prefs.language == 'en';
 
     if (!_hasSearched) {
-      return Center(child: Text(prefs.getLabel('start_search_instruction')));
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text(prefs.getLabel('start_search_instruction'))),
+      );
     }
 
     if (_displayedStickers.isEmpty) {
-      if (_isLoadingMore) return const Center(child: CircularProgressIndicator());
-      return Center(child: Text(prefs.getLabel('no_stickers_found')));
+      if (_isLoadingMore) {
+        return const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text(prefs.getLabel('no_stickers_found'))),
+      );
     }
 
-    return ListView.separated(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(8),
-      itemCount: _displayedStickers.length + (_isLoadingMore ? 1 : 0),
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        if (index == _displayedStickers.length) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(),
-          ));
-        }
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+            (context, index) {
+          if (index == _displayedStickers.length) {
+            return const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-        final sticker = _displayedStickers[index];
-        String displayName;
+          final sticker = _displayedStickers[index];
+          String displayName;
 
-        if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
-          displayName = sticker.nameInEnglish;
-        } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
-          displayName = sticker.nameInHebrew;
-        } else {
-          displayName = sticker.text;
-        }
+          if (isEnglish && sticker.nameInEnglish.isNotEmpty) {
+            displayName = sticker.nameInEnglish;
+          } else if (!isEnglish && sticker.nameInHebrew.isNotEmpty) {
+            displayName = sticker.nameInHebrew;
+          } else {
+            displayName = sticker.text;
+          }
 
-        String displayQuote;
-        if (isEnglish && sticker.enQuote.isNotEmpty) {
-          displayQuote = sticker.enQuote;
-        } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
-          displayQuote = sticker.heQuote;
-        } else {
-          displayQuote = sticker.content;
-        }
+          String displayQuote;
+          if (isEnglish && sticker.enQuote.isNotEmpty) {
+            displayQuote = sticker.enQuote;
+          } else if (!isEnglish && sticker.heQuote.isNotEmpty) {
+            displayQuote = sticker.heQuote;
+          } else {
+            displayQuote = sticker.content;
+          }
 
-        return ListTile(
-          leading: sticker.imageUrl.isNotEmpty
-              ? ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: Image.network(
-              sticker.imageUrl,
-              width: 50, height: 50, fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(Icons.image),
-            ),
-          )
-              : const Icon(Icons.sticky_note_2),
+          return Column(
+            children: [
+              ListTile(
+                leading: sticker.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    sticker.imageUrl,
+                    width: 50, height: 50, fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.image),
+                  ),
+                )
+                    : const Icon(Icons.sticky_note_2),
 
-          title: Text(
-            displayName,
-            textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+                title: Text(
+                  displayName,
+                  textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
 
-          subtitle: Text(
-              parse(displayQuote).body?.text ?? '',
-              textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis
-          ),
-          onTap: () {
-            _showStickerDetails(sticker);
-          },
-        );
-      },
+                subtitle: Text(
+                    parse(displayQuote).body?.text ?? '',
+                    textDirection: isEnglish ? TextDirection.ltr : TextDirection.rtl,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis
+                ),
+                onTap: () {
+                  _showStickerDetails(sticker);
+                },
+              ),
+              if (index < _displayedStickers.length - 1)
+                const Divider(height: 1),
+            ],
+          );
+        },
+        childCount: _displayedStickers.length + (_isLoadingMore ? 1 : 0),
+      ),
     );
   }
 }
