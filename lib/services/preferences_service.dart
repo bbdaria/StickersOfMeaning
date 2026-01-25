@@ -7,13 +7,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widget_service.dart';
 import '../models/sticker.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 
-class PreferencesService extends ChangeNotifier {
+class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   static const String _keyWidgetRefreshInterval = 'widget_refresh_interval';
   static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
 
   String _appPath = '';
+  Timer? _autoReloadTimer;
 
   static const _keyLanguage = 'app_language';
   static const _keyStickerSource = 'sticker_source';
@@ -25,6 +27,8 @@ class PreferencesService extends ChangeNotifier {
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
+
+  static const _keyWidgetStickerId = 'current_widget_sticker_id';
 
   String _language = 'en';
   String _stickerSource = 'web';
@@ -38,6 +42,8 @@ class PreferencesService extends ChangeNotifier {
   List<Sticker> _cachedPool = [];
 
   Future<void> init() async {
+    WidgetsBinding.instance.addObserver(this);
+
     _prefs = await SharedPreferences.getInstance();
     final dir = await getApplicationDocumentsDirectory();
     _appPath = dir.path;
@@ -51,6 +57,65 @@ class PreferencesService extends ChangeNotifier {
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
     _loadPoolToMemory();
+    _startAutoReloadTimer();
+  }
+
+  void _startAutoReloadTimer() {
+    _autoReloadTimer?.cancel();
+    // Check every 2 seconds if the widget was updated in the background
+    _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      reload();
+    });
+  }
+
+  File get _widgetIdFile => File('$_appPath/widget_id.txt');
+
+  Future<void> reload() async {
+    // 1. Try standard reload
+    await _prefs.reload();
+
+    // 2. Check the raw file which bypasses the SharedPreferences cache
+    try {
+      final file = _widgetIdFile;
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final int? fileId = int.tryParse(content);
+        final int? memId = _prefs.getInt(_keyWidgetStickerId);
+
+        // If file has a new ID that SharedPreferences doesn't know about yet
+        if (fileId != null && fileId != memId) {
+          await _prefs.setInt(_keyWidgetStickerId, fileId);
+          notifyListeners();
+        }
+        // Or if SharedPreferences updated but we missed the notification
+        else if (fileId != null) {
+          // just to be safe, sometimes notifyListeners ensures the UI rebuilds
+          // even if the value technically matches
+          final int? currentMemId = _prefs.getInt(_keyWidgetStickerId);
+          if(currentMemId != fileId) {
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore file errors, fallback to prefs
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoReloadTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _prefs.reload().then((_) {
+        notifyListeners();
+      });
+    }
   }
 
   static const Map<String, Map<String, String>> _labels = {
@@ -64,7 +129,7 @@ class PreferencesService extends ChangeNotifier {
       'content_preferences': "Content preferences",
       'what_to_see': "What would you like to see?",
       'visit_site': "Visit our site",
-      'sticker_of_meaning': "Sticker Of Meaning",
+      'sticker_of_meaning': "Stickers Of Meaning",
       'see_info': "See Info",
       'send_to_widget': "Send to Widget",
       'sticker_in_widget': "In Widget",
@@ -368,10 +433,24 @@ class PreferencesService extends ChangeNotifier {
     }
   }
 
-  static const _keyWidgetStickerId = 'current_widget_sticker_id';
   int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
+
+  // Future<void> setWidgetStickerId(int id) async {
+  //   await _prefs.setInt(_keyWidgetStickerId, id);
+  //   notifyListeners();
+  // }
+
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
+
+    // Write to a FILE for reliable cross-isolate sync
+    try {
+      final file = _widgetIdFile;
+      await file.writeAsString(id.toString());
+    } catch (e) {
+      debugPrint("Error writing widget ID file: $e");
+    }
+
     notifyListeners();
   }
 

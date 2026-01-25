@@ -94,6 +94,14 @@ class WidgetService {
     await prefs.setString('latest_sticker_title', sticker.text);
     await prefs.setString('saved_sticker_image_url', sticker.imageUrl);
 
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final file = File('${docDir.path}/widget_id.txt');
+      await file.writeAsString(sticker.id.toString(), flush: true);
+    } catch (e) {
+      debugPrint("Error writing widget sync file: $e");
+    }
+
     final int textColor = prefs.getInt('widget_text_color') ?? 0xFF1E3A8A;
     final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
     final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
