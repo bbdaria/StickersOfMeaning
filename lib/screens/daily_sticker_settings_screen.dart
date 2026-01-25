@@ -274,17 +274,17 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               const SizedBox(height: 10),
 
               // >>>>>>>>>>>>>> TEST BUTTON:
-              // TextButton(
-              //   onPressed: () {
-              //     Workmanager().registerOneOffTask(
-              //       "test_task_${DateTime.now().millisecondsSinceEpoch}",
-              //       "widgetUpdateTask",
-              //       constraints: Constraints(networkType: NetworkType.connected),
-              //     );
-              //     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Triggered Background Test!')));
-              //   },
-              //   child: const Text("Test Background Logic Now"),
-              // )
+              TextButton(
+                onPressed: () {
+                  Workmanager().registerOneOffTask(
+                    "test_task_${DateTime.now().millisecondsSinceEpoch}",
+                    "widgetUpdateTask",
+                    constraints: Constraints(networkType: NetworkType.connected),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Triggered Background Test!')));
+                },
+                child: const Text("Test Background Logic Now"),
+              )
             ],
           );
         },

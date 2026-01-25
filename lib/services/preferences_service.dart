@@ -64,7 +64,7 @@ class PreferencesService extends ChangeNotifier {
       'content_preferences': "Content preferences",
       'what_to_see': "What would you like to see?",
       'visit_site': "Visit our site",
-      'sticker_of_meaning': "Sticker Of Meaning",
+      'sticker_of_meaning': "Stickers Of Meaning",
       'see_info': "See Info",
       'send_to_widget': "Send to Widget",
       'sticker_in_widget': "In Widget",
