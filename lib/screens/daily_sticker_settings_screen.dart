@@ -4,7 +4,7 @@ import '../services/preferences_service.dart';
 import '../services/api_service.dart';
 import '../services/widget_service.dart';
 import '../services/background_service.dart';
-import 'package:workmanager/workmanager.dart';
+import 'package:flutter/foundation.dart';
 
 class DailyStickerSettingsScreen extends StatefulWidget {
   static const routeName = '/daily-settings';
@@ -25,6 +25,32 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
     _loadCategories();
   }
 
+  Future<void> _forceUpdateNow() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Forcing immediate update... please wait'), duration: Duration(seconds: 1)),
+    );
+
+    try {
+      final prefs = context.read<PreferencesService>();
+      final widgetService = context.read<WidgetService>();
+      final apiService = context.read<ApiService>();
+
+      // Call the API service directly (Same logic as background task, but runs NOW)
+      await apiService.updateWidgetContent(prefs, widgetService);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Update done! Check if the button changed.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   Future<void> _updateRefreshInterval(int? newValue) async {
     if (newValue == null) return;
@@ -274,17 +300,35 @@ class _DailyStickerSettingsScreenState extends State<DailyStickerSettingsScreen>
               const SizedBox(height: 10),
 
               // >>>>>>>>>>>>>> TEST BUTTON:
-              TextButton(
-                onPressed: () {
-                  Workmanager().registerOneOffTask(
-                    "test_task_${DateTime.now().millisecondsSinceEpoch}",
-                    "widgetUpdateTask",
-                    constraints: Constraints(networkType: NetworkType.connected),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Triggered Background Test!')));
-                },
-                child: const Text("Test Background Logic Now"),
-              )
+              if (kDebugMode) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text("Developer Test Zone", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _forceUpdateNow, // CALLS THE DIRECT UPDATE
+                        icon: const Icon(Icons.bolt, color: Colors.white),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        label: const Text("Force Immediate Update", style: TextStyle(color: Colors.white)),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Updates widget + file immediately.\nUse this to test if the button changes.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              ]
             ],
           );
         },

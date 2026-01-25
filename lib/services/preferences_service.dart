@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'widget_service.dart';
 import '../models/sticker.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   static const String _keyWidgetRefreshInterval = 'widget_refresh_interval';
@@ -14,6 +15,7 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   late SharedPreferences _prefs;
 
   String _appPath = '';
+  Timer? _autoReloadTimer;
 
   static const _keyLanguage = 'app_language';
   static const _keyStickerSource = 'sticker_source';
@@ -25,6 +27,8 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   static const _keyDailyDate = 'daily_date';
   static const _keyDailyStickerId = 'daily_sticker_id';
   static const _keySeenStickers = 'seen_sticker_ids';
+
+  static const _keyWidgetStickerId = 'current_widget_sticker_id';
 
   String _language = 'en';
   String _stickerSource = 'web';
@@ -53,10 +57,54 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
     _loadPoolToMemory();
+    _startAutoReloadTimer();
+  }
+
+  void _startAutoReloadTimer() {
+    _autoReloadTimer?.cancel();
+    // Check every 2 seconds if the widget was updated in the background
+    _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      reload();
+    });
+  }
+
+  File get _widgetIdFile => File('$_appPath/widget_id.txt');
+
+  Future<void> reload() async {
+    // 1. Try standard reload
+    await _prefs.reload();
+
+    // 2. Check the raw file which bypasses the SharedPreferences cache
+    try {
+      final file = _widgetIdFile;
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final int? fileId = int.tryParse(content);
+        final int? memId = _prefs.getInt(_keyWidgetStickerId);
+
+        // If file has a new ID that SharedPreferences doesn't know about yet
+        if (fileId != null && fileId != memId) {
+          await _prefs.setInt(_keyWidgetStickerId, fileId);
+          notifyListeners();
+        }
+        // Or if SharedPreferences updated but we missed the notification
+        else if (fileId != null) {
+          // just to be safe, sometimes notifyListeners ensures the UI rebuilds
+          // even if the value technically matches
+          final int? currentMemId = _prefs.getInt(_keyWidgetStickerId);
+          if(currentMemId != fileId) {
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore file errors, fallback to prefs
+    }
   }
 
   @override
   void dispose() {
+    _autoReloadTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -385,11 +433,24 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  static const _keyWidgetStickerId = 'current_widget_sticker_id';
   int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
+
+  // Future<void> setWidgetStickerId(int id) async {
+  //   await _prefs.setInt(_keyWidgetStickerId, id);
+  //   notifyListeners();
+  // }
 
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
+
+    // Write to a FILE for reliable cross-isolate sync
+    try {
+      final file = _widgetIdFile;
+      await file.writeAsString(id.toString());
+    } catch (e) {
+      debugPrint("Error writing widget ID file: $e");
+    }
+
     notifyListeners();
   }
 
@@ -423,11 +484,6 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> setRefreshInterval(int minutes) async {
     await _prefs.setInt(_keyWidgetRefreshInterval, minutes);
-    notifyListeners();
-  }
-
-  Future<void> reload() async {
-    await _prefs.reload();
     notifyListeners();
   }
 }
