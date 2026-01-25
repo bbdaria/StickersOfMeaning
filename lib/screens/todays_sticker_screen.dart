@@ -15,17 +15,30 @@ class TodaysStickerScreen extends StatefulWidget {
   State<TodaysStickerScreen> createState() => _TodaysStickerScreenState();
 }
 
-class _TodaysStickerScreenState extends State<TodaysStickerScreen> {
+class _TodaysStickerScreenState extends State<TodaysStickerScreen> with WidgetsBindingObserver {
   late Future<Sticker> _futureSticker;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final api = context.read<ApiService>();
     final prefs = context.read<PreferencesService>();
     final widgetService = context.read<WidgetService>();
-
     _futureSticker = api.getDailySticker(prefs, widgetService);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<PreferencesService>().reload();
+    }
   }
 
   Future<void> _openSite(String url) async {

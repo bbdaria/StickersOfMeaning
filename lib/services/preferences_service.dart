@@ -8,7 +8,7 @@ import 'widget_service.dart';
 import '../models/sticker.dart';
 import 'package:flutter/material.dart';
 
-class PreferencesService extends ChangeNotifier {
+class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
   static const String _keyWidgetRefreshInterval = 'widget_refresh_interval';
   static const _poolKey = 'sticker_pool';
   late SharedPreferences _prefs;
@@ -38,6 +38,8 @@ class PreferencesService extends ChangeNotifier {
   List<Sticker> _cachedPool = [];
 
   Future<void> init() async {
+    WidgetsBinding.instance.addObserver(this);
+
     _prefs = await SharedPreferences.getInstance();
     final dir = await getApplicationDocumentsDirectory();
     _appPath = dir.path;
@@ -51,6 +53,21 @@ class PreferencesService extends ChangeNotifier {
     _widgetShowImage = _prefs.getBool(_keyWidgetShowImage) ?? true;
 
     _loadPoolToMemory();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _prefs.reload().then((_) {
+        notifyListeners();
+      });
+    }
   }
 
   static const Map<String, Map<String, String>> _labels = {
@@ -370,6 +387,7 @@ class PreferencesService extends ChangeNotifier {
 
   static const _keyWidgetStickerId = 'current_widget_sticker_id';
   int? get widgetStickerId => _prefs.getInt(_keyWidgetStickerId);
+
   Future<void> setWidgetStickerId(int id) async {
     await _prefs.setInt(_keyWidgetStickerId, id);
     notifyListeners();
@@ -405,6 +423,11 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setRefreshInterval(int minutes) async {
     await _prefs.setInt(_keyWidgetRefreshInterval, minutes);
+    notifyListeners();
+  }
+
+  Future<void> reload() async {
+    await _prefs.reload();
     notifyListeners();
   }
 }
