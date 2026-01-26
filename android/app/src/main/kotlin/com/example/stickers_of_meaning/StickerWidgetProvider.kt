@@ -1,4 +1,4 @@
-package com.example.stickers_of_meaning
+package com.technion.stickers_of_meaning
 
 import com.technion.stickers_of_meaning.R
 import android.appwidget.AppWidgetManager

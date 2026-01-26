@@ -7,7 +7,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Kotlin DSL: Use 'val', double quotes, and proper file loading
+// Load key.properties for Release Signing
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.technion.stickers_of_meaning"
+    namespace = "com.technion.stickers_of_meaning" // Course requirement
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.technion.stickers_of_meaning"
+        applicationId = "com.technion.stickers_of_meaning" // Course requirement
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -37,11 +37,9 @@ android {
     }
 
     signingConfigs {
-        // Kotlin DSL: Use 'create' to define a new config
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String?
             keyPassword = keystoreProperties["keyPassword"] as String?
-            // Kotlin DSL: Use if/else instead of ternary operator
             storeFile = if (keystoreProperties["storeFile"] != null) {
                 file(keystoreProperties["storeFile"] as String)
             } else {
@@ -53,8 +51,12 @@ android {
 
     buildTypes {
         release {
-            // Kotlin DSL: Access the config using getByName
+            // Use the release signing config we defined above
+            // If key.properties is missing, this might cause the NPE you saw.
+            // Ensure android/key.properties exists!
             signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
