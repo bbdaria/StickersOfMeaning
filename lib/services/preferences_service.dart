@@ -182,6 +182,7 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
       '12h_refresh_opt': "Every 12 hours",
       '24h_refresh_opt': "Every 24 hours",
       '15min_refresh_opt': "Every 15 minutes",
+      'about': "About",
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -253,6 +254,7 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
       '12h_refresh_opt': "כל 12 שעות",
       '24h_refresh_opt': "כל יום",
       '15min_refresh_opt': "כל 15 דקות",
+      'about': "אודות",
     }
   };
 

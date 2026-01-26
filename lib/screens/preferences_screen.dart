@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
 import 'daily_sticker_settings_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'widget_settings_screen.dart';
 
 class PreferencesScreen extends StatelessWidget {
@@ -79,7 +80,30 @@ class PreferencesScreen extends StatelessWidget {
               },
             ),
           ),
-
+          const SizedBox(height: 24),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                showAboutDialog(
+                  context: context,
+                  applicationName: prefs.getLabel('app_title'),
+                  applicationVersion: '1.0.0',
+                  applicationLegalese: '© 2026 Stickers of Meaning',
+                  applicationIcon: SvgPicture.asset(
+                    'assets/icons/Logo.svg',
+                    width: 50,
+                    height: 50,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.info_outline, size: 20),
+              label: Text(prefs.getLabel('about')),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
