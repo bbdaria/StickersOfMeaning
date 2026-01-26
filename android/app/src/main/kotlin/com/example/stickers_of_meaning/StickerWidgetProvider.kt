@@ -1,5 +1,6 @@
 package com.example.stickers_of_meaning
 
+import com.technion.stickers_of_meaning.R
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
