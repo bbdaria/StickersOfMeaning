@@ -183,6 +183,9 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
       '24h_refresh_opt': "Every 24 hours",
       '15min_refresh_opt': "Every 15 minutes",
       'about': "About",
+      'credits': "Herzog Strategic\nIsrael's Institute of Technology (Technion)",
+      'developed_by': "Daria Bebin\nUri Kasher Hitin",
+      'special_thanks': "Nitzan Ben Nun\nIdo Ram\nItay Dabran",
     },
     'he': {
       'app_title': 'מדבקות עם משמעות',
@@ -255,6 +258,15 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
       '24h_refresh_opt': "כל יום",
       '15min_refresh_opt': "כל 15 דקות",
       'about': "אודות",
+      'credits':
+          "הרצוג אסטרטגיות"
+          "\nהטכניון",
+      'developed_by': "דריה בבין"
+          "\nאורי כשר חיטין",
+      'special_thanks':
+          "ניצן בן נון"
+          "\nעידו רם"
+          "\nאיתי דברן"
     }
   };
 

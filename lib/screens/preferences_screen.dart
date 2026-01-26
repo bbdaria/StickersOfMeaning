@@ -89,11 +89,15 @@ class PreferencesScreen extends StatelessWidget {
                   applicationName: prefs.getLabel('app_title'),
                   applicationVersion: '1.0.0',
                   applicationLegalese: '© 2026 Stickers of Meaning',
-                  applicationIcon: SvgPicture.asset(
-                    'assets/icons/Logo.svg',
-                    width: 50,
-                    height: 50,
-                  ),
+                  children: [
+                    Text(
+                      prefs.getLabel('developed_by'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(prefs.getLabel('special_thanks')),
+                    Text(prefs.getLabel('credits'))
+                  ],
                 );
               },
               icon: const Icon(Icons.info_outline, size: 20),
