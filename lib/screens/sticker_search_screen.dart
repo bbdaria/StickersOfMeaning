@@ -176,13 +176,22 @@ class _StickerSearchScreenState extends State<StickerSearchScreen> {
     setState(() => _isLoadingMore = true);
     try {
       final api = context.read<ApiService>();
+      final query = _controller.text.trim().toLowerCase();
       final results = await api.searchStickers(
-        query: _controller.text.trim(),
+        query: query,
         categoryIds: _selectedCategories.toList(),
       );
       if (mounted) {
         setState(() {
-          _displayedStickers = results;
+          _displayedStickers = results.where((sticker) {
+            final nameMatch = sticker.text.toLowerCase().contains(query) ||
+                sticker.nameInEnglish.toLowerCase().contains(query) ||
+                sticker.nameInHebrew.toLowerCase().contains(query);
+            final quoteMatch = sticker.content.toLowerCase().contains(query) ||
+                sticker.enQuote.toLowerCase().contains(query) ||
+                sticker.heQuote.toLowerCase().contains(query);
+            return nameMatch || quoteMatch;
+          }).toList();
         });
       }
     } catch (e) {
