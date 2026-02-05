@@ -116,7 +116,7 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
       'app_title': 'Stickers of meaning',
       'todays_sticker': "Today's Sticker",
       'your_collection': "Your collection",
-      'explore_collection': "Explore and add to the collection",
+      'explore_collection': "Explore and add to your collection",
       'customize_widget': "Customize your widget",
       'settings_customization': "Widget customization",
       'content_preferences': "Content preferences",
