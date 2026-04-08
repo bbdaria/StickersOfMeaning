@@ -3,7 +3,7 @@
 ## 1. Project Overview
 "Stickers of Meaning" is a Flutter-based mobile application built to serve as a digital companion to the initiative honoring the victims of the Swords of Iron war. 
 
-From a technical perspective, the app is a **content-delivery platform with heavy emphasis on native home-screen widgets**. It fetches data from a headless WordPress REST API (`stickersofmeaning.org/wp-json/wp/v2/`), allows users to cache content locally ("Pool/Collection"), and schedules background tasks to periodically update a native Android/iOS home screen widget.
+From a technical perspective, the app is a **content-delivery platform with heavy emphasis on native home-screen widgets**. It fetches data from a headless WordPress REST API (`stickersofmeaning.org/wp-json/wp/v2/`), allows users to cache content locally ("Pool/Collection"), and schedules background tasks to periodically update a native Android home screen widget.
 
 ### Tech Stack & Core Libraries
 * **Framework:** Flutter (Dart)
