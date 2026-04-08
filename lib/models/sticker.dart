@@ -29,6 +29,15 @@ class Sticker {
     this.categories = const [],
   });
 
+  /// Parses a WordPress REST API JSON response into a Sticker object.
+  /// 
+  /// The WordPress payload structure is highly inconsistent depending on how 
+  /// the post was authored. This factory uses an aggressive fallback chain to 
+  /// find the actual quote content:
+  /// 1. Checks custom `meta` fields (en_quote, he_quote).
+  /// 2. Iterates through a list of possible dictionary keys (motto, message, etc.).
+  /// 3. Falls back to stripping HTML from `content.rendered`.
+  /// 4. As a last resort, checks attached media captions and alt-text.
   factory Sticker.fromJson(Map<String, dynamic> json) {
     // Creates a sticker object from the JSON of an API response
     var unescape = HtmlUnescape();
