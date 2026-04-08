@@ -148,6 +148,14 @@ class ApiService {
     return data.map((e) => Sticker.fromJson(e)).toList();
   }
 
+  /// Fetches the sticker to display for the current day.
+  /// 
+  /// Decision Flow:
+  /// 1. If today's sticker is already set and cached locally, return it.
+  /// 2. If it's set but not in the local pool, fetch its details from the Web.
+  /// 3. If no sticker is set for today (or a force refresh is requested), 
+  ///    fetch a random unseen sticker from the Web based on user filters,
+  ///    save it as today's sticker, and trigger a native widget update.
   Future<Sticker> getDailySticker(
       PreferencesService prefs,
       WidgetService widgetService, {
