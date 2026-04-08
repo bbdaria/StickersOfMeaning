@@ -24,7 +24,7 @@ The project follows a standard service-oriented architecture. UI components are 
 
 #### Entry Point & Configuration
 * **`main.dart`**: The application entry point. It initializes core asynchronous services (`BackgroundService`, `PreferencesService`, `WidgetService`) before `runApp` is called. It wraps the app in a `MultiProvider` to make these services available globally.
-* **`app.dart`**: The root app widget. It configures the `MaterialApp`, handles theming, internationalization (i18n) setup (English/Hebrew), and defines the named routes for all screens (e.g., `HomeScreen`, `PreferencesScreen`, `StickerPoolScreen`). It also wraps the app in a `ConnectivityWrapper` to handle offline states.
+* **`app.dart`**: The root app widget. It configures the `MaterialApp`, handles theming, internationalization (i18n) setup (English/Hebrew), and defines the named routes for all screens (including `HomeScreen`, `StickerSearchScreen`, `StickerPoolScreen`, and dedicated settings screens like `WidgetSettingsScreen`, `TodaysStickerScreen`, and `DailyStickerSettingsScreen`). It also wraps the app in a `ConnectivityWrapper` to handle offline states.
 
 #### Models (`lib/models/`)
 * **`sticker.dart`**: The core data model representing a sticker. 
@@ -38,13 +38,16 @@ This is the "brain" of the application.
 * **`preferences_service.dart`**: A massive `ChangeNotifier` that manages local state.
   * Handles user preferences (language, text size, widget styling, update intervals).
   * Manages the **Sticker Pool** (the user's saved collection).
-  * **Important:** It actively caches images locally (`_downloadAndSaveImage`) when a sticker is saved to the pool, ensuring the widget can access the image even when offline.
+  * **Important:** It actively caches images locally (`_downloadAndSaveImage`) when a sticker is saved to the pool, ensuring the widget can access the image even when offline. **Note:** Pool images are saved to the **Application Documents Directory**.
   * Implements a file-based polling mechanism (`_startAutoReloadTimer` checking `widget_id.txt`) to sync widget state when the app is resumed.
 * **`widget_service.dart`**: The bridge between Flutter and the Native Widget using the `home_widget` package.
-  * Formats data (text, background color, text color, local image paths) and saves it to the native shared memory group (`group.stickers.of.meaning`).
+  * Formats data (text, background color, text color, local image paths) and saves it to the native shared memory group (`group.stickers.of.meaning`). 
+  * **Note on Colors:** It explicitly casts Flutter colors to 32-bit signed integers (`.toSigned(32)`) to ensure compatibility with Android's native `SharedPreferences`.
+  * **Note on Images:** It downloads and saves the active widget's image to the **Application Support Directory** as `widget_image.png`.
   * Triggers the native widget refresh command.
 * **`background_service.dart`**: Configures the `workmanager` package.
   * Defines the headless task `widgetUpdateTask` which runs in the background (even when the app is killed), instantiates the necessary services, and fetches a new sticker to update the native widget based on the user's refresh interval.
+  * **Developer Note:** Android enforces a minimum periodic interval of 15 minutes for `workmanager` tasks, and execution is subject to OS battery Doze mode constraints. Updates may not happen to the exact minute.
 
 ---
 
@@ -52,13 +55,11 @@ This is the "brain" of the application.
 
 Because this app heavily relies on a Home Screen Widget, a significant portion of the rendering logic lives in the native code. 
 
-### Android (`android/app/src/main/kotlin/com/example/stickers_of_meaning/`)
+### Android (`android/app/src/main/kotlin/com/technion/stickers_of_meaning/`)
 * **`StickerWidgetProvider.kt`**: The native Android AppWidgetProvider.
   * **Data Retrieval:** It reads the formatted data (colors, text, image paths, visibility flags) saved by Flutter's `WidgetService`.
   * **Dynamic UI Rendering:** It toggles between two states: "Image Mode" (shows the fallen's photo) and "Text Mode" (shows their quote with a customized background color and opacity).
   * **Dynamic Text Sizing (`calculateOptimalTextSize`):** A crucial custom function. Because widget sizes vary dynamically based on user resizing on their launcher, this function creates a `StaticLayout` and recursively shrinks the font size until the quote perfectly fits within the physical constraints of the widget.
-
-*(Note: iOS native implementations will reside in the `ios/Runner/` directory following a similar bridging concept using App Groups and Swift/WidgetKit).*
 
 ---
 
