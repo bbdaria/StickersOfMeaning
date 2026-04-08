@@ -106,6 +106,9 @@ class WidgetService {
     final int rawBgColor = prefs.getInt('widget_bg_color') ?? 0xFFFFFFFF;
     final double opacity = prefs.getDouble('widget_opacity') ?? 1.0;
 
+    // MUST cast colors to 32-bit signed integers before passing them over the 
+    // home_widget bridge. Flutter uses 64-bit unsigned integers, which will crash 
+    // Android's native SharedPreferences if not explicitly converted.
     final int safeTextColor = Color(textColor).value.toSigned(32);
     final int safeBgColor = Color(rawBgColor).withOpacity(opacity).value.toSigned(32);
 
