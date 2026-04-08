@@ -61,6 +61,12 @@ class PreferencesService extends ChangeNotifier with WidgetsBindingObserver {
     _startAutoReloadTimer();
   }
 
+  /// Starts a polling loop to read `widget_id.txt` every 2 seconds.
+  /// 
+  /// This is a workaround to sync the Flutter app's state with the Native Widget.
+  /// If the Native Widget updates in the background (e.g., via WorkManager), the 
+  /// Flutter app's memory won't know the `current_widget_sticker_id` has changed 
+  /// until it reads this file.
   void _startAutoReloadTimer() {
     _autoReloadTimer?.cancel();
     _autoReloadTimer = Timer.periodic(const Duration(seconds: 2), (_) {
