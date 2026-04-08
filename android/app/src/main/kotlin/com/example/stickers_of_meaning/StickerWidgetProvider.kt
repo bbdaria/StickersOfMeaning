@@ -137,6 +137,13 @@ class StickerWidgetProvider : HomeWidgetProvider() {
         onUpdate(context, appWidgetManager, intArrayOf(appWidgetId), widgetData)
     }
 
+    /**
+     * Recursively calculates the maximum font size that allows the given [text] 
+     * to fit entirely within the physical dimensions of the widget ([widthPx], [heightPx]).
+     * * This is required because Android's RemoteViews do not natively support robust 
+     * auto-scaling text across all custom manufacturer launchers. We simulate the 
+     * text bounds using a StaticLayout and shrink the font size until it fits.
+     */
     private fun calculateOptimalTextSize(
         context: Context,
         text: String,
